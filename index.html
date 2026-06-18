@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Constructor - CRM система</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+        }
+
+        .header .user-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .user-badge {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f3f4f6;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #0c2d6b;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .metric-input {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .metric-input input {
+            padding: 8px 10px;
+        }
+
+        .weight-validator {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .weight-validator.valid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .weight-validator.invalid {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .percentage {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .bonus-display {
+            font-size: 20px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎯 KPI Constructor</h1>
+            <div class="user-info">
+                <span>Демо версія (все данные в памяти)</span>
+                <div class="user-badge">Operations</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('metrics')">📊 Банк метрик</button>
+            <button class="tab-btn" onclick="switchTab('config')">⚙️ Конструктор KPI</button>
+            <button class="tab-btn" onclick="switchTab('data')">📈 Ввід фактів</button>
+            <button class="tab-btn" onclick="switchTab('results')">✨ Результаты</button>
+            <button class="tab-btn" onclick="switchTab('calculations')">🧮 Расчеты</button>
+        </div>
+
+        <!-- TAB 1: Банк метрик -->
+        <div id="metrics" class="tab-content active">
+            <div class="card">
+                <h2>📊 Глобальний банк метрик</h2>
+                <div class="form-row">
+                    <input type="text" id="metricName" placeholder="Назва метрики (FTD, #)">
+                    <select id="metricType">
+                        <option>NUMBER</option>
+                        <option>PERCENT</option>
+                    </select>
+                    <select id="metricDirection">
+                        <option value="MORE_IS_BETTER">Більше = краще</option>
+                        <option value="LESS_IS_BETTER">Менше = краще</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addMetric()">Додати</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Назва</th>
+                                <th>Тип</th>
+                                <th>Напрямок</th>
+                                <th>Статус</th>
+                                <th>Дія</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metricsTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Конструктор KPI -->
+        <div id="config" class="tab-content">
+            <div class="card">
+                <h2>⚙️ Конструктор конфігурацій KPI</h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Назва команди</label>
+                        <input type="text" id="teamName" placeholder="Marketing Team">
+                    </div>
+                    <div class="form-group">
+                        <label>Період (YYYYMM)</label>
+                        <input type="text" id="period" placeholder="202501" value="202501">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Вибір метрик (відмітьте потрібні)</label>
+                    <div id="metricsCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Налаштування ваг метрик</label>
+                    <div id="weightsInput"></div>
+                    <div id="weightValidator" class="weight-validator invalid">Сума ваг: 0% (повинна бути 100%)</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Менеджери команди</label>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="managerName" placeholder="Ім'я менеджера">
+                        <select id="managerGrade">
+                            <option>JUNIOR</option>
+                            <option selected>MIDDLE</option>
+                            <option>SENIOR</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="addManager()">Додати</button>
+                    </div>
+                    <div id="managersList"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Модель бонусу</label>
+                    <select id="bonusModel" onchange="updateBonusUI()">
+                        <option value="LINEAR">Лінійна</option>
+                        <option value="THRESHOLD">Порогова</option>
+                        <option value="MATRIX">Матриця (лесенка)</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Базовий бонус ($)</label>
+                        <input type="number" id="baseBonus" value="1000">
+                    </div>
+                    <div class="form-group" id="thresholdGroup" style="display: none;">
+                        <label>Поріг (%)</label>
+                        <input type="number" id="threshold" value="80">
+                    </div>
+                    <div class="form-group" id="coefficientGroup" style="display: none;">
+                        <label>Макс. коефіцієнт</label>
+                        <input type="number" id="maxCoefficient" value="1.2" step="0.1">
+                    </div>
+                </div>
+
+                <button class="btn btn-success" onclick="saveConfiguration()" style="width: 100%; padding: 15px; font-size: 16px;">✅ Зберегти конфігурацію</button>
+            </div>
+        </div>
+
+        <!-- TAB 3: Ввід фактів -->
+        <div id="data" class="tab-content">
+            <div class="card">
+                <h2>📈 Ввід фактичних даних</h2>
+                <div id="dataEntryArea" style="color: #999;">Спочатку створіть конфігурацію KPI...</div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Результаты -->
+        <div id="results" class="tab-content">
+            <div class="card">
+                <h2>✨ Результати команди</h2>
+                <div id="resultsArea" style="color: #999;">Спочатку внесіть фактичні дані...</div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Расчеты -->
+        <div id="calculations" class="tab-content">
+            <div class="card">
+                <h2>🧮 Як рахуються KPI і бонуси</h2>
+                
+                <div style="line-height: 1.8; color: #555;">
+                    <h3 style="margin: 20px 0 10px 0; color: #333;">1. Відсоток виконання по метриці:</h3>
+                    <p style="background: #f3f4f6; padding: 15px; border-left: 4px solid #667eea; border-radius: 4px;">
+                        <strong>% метрики = (Факт / План) × 100</strong><br>
+                        Для метрик "менше = краще": % = (План / Факт) × 100<br>
+                        Приклад: факт 95, план 100 → 95%
+                    </p>
+
+                    <h3 style="margin: 20px 0 10px 0; color: #333;">2. Зважений % KPI менеджера:</h3>
+                    <p style="background: #f3f4f6; padding: 15px; border-left: 4px solid #667eea; border-radius: 4px;">
+                        <strong>% KPI = Σ(% метрики × Вага метрики / 100)</strong><br>
+                        Приклад: метрика A 95% (вага 40%) + метрика B 105% (вага 60%)<br>
+                        = (95 × 40 + 105 × 60) / 100 = 101%
+                    </p>
+
+                    <h3 style="margin: 20px 0 10px 0; color: #333;">3. Розрахунок бонусу (3 моделі):</h3>
+                    
+                    <h4 style="color: #667eea; margin: 15px 0 10px 0;">📌 Лінійна модель:</h4>
+                    <p style="background: #f3f4f6; padding: 15px; border-left: 4px solid #10b981; border-radius: 4px;">
+                        <strong>Бонус = Базовий × (% KPI / 100)</strong><br>
+                        Приклад: 85% KPI → 85% від базового бонусу
+                    </p>
+
+                    <h4 style="color: #667eea; margin: 15px 0 10px 0;">📌 Порогова модель:</h4>
+                    <p style="background: #f3f4f6; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                        До 80% → 0 бонусу<br>
+                        Від 80% → Базовий × (% KPI / 100) × Макс. коефіцієнт
+                    </p>
+
+                    <h4 style="color: #667eea; margin: 15px 0 10px 0;">📌 Матриця (лесенка):</h4>
+                    <table style="width: 100%; margin-top: 10px; border: 1px solid #e5e7eb;">
+                        <tr style="background: #f3f4f6;">
+                            <th style="padding: 10px; text-align: left;">% KPI</th>
+                            <th style="padding: 10px; text-align: left;">Бонус</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border-top: 1px solid #e5e7eb;">< 70%</td>
+                            <td style="padding: 10px; border-top: 1px solid #e5e7eb;">0%</td>
+                        </tr>
+                        <tr style="background: #f9fafb;">
+                            <td style="padding: 10px;">70% - 89%</td>
+                            <td style="padding: 10px;">50% бонусу</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border-top: 1px solid #e5e7eb;">90% - 99%</td>
+                            <td style="padding: 10px; border-top: 1px solid #e5e7eb;">100% бонусу</td>
+                        </tr>
+                        <tr style="background: #f9fafb;">
+                            <td style="padding: 10px;">100%+</td>
+                            <td style="padding: 10px;">120% бонусу</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage
+        const state = {
+            metrics: [
+                { id: 1, name: 'FTD, #', type: 'NUMBER', direction: 'MORE_IS_BETTER', status: 'ACTIVE' },
+                { id: 2, name: 'Cost per FTD, $', type: 'NUMBER', direction: 'LESS_IS_BETTER', status: 'ACTIVE' },
+                { id: 3, name: 'ROMI, %', type: 'PERCENT', direction: 'MORE_IS_BETTER', status: 'ACTIVE' },
+                { id: 4, name: 'Reach, тис', type: 'NUMBER', direction: 'MORE_IS_BETTER', status: 'ACTIVE' },
+                { id: 5, name: 'ER, %', type: 'PERCENT', direction: 'MORE_IS_BETTER', status: 'ACTIVE' },
+            ],
+            selectedMetrics: {},
+            weights: {},
+            managers: [],
+            configuration: null,
+            data: {},
+        };
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function renderMetrics() {
+            const tbody = document.getElementById('metricsTable');
+            tbody.innerHTML = state.metrics.map((m, i) => `
+                <tr>
+                    <td>${m.name}</td>
+                    <td><span class="badge badge-info">${m.type}</span></td>
+                    <td>${m.direction === 'MORE_IS_BETTER' ? '📈 Більше' : '📉 Менше'}</td>
+                    <td><span class="badge badge-success">${m.status}</span></td>
+                    <td>
+                        <button class="btn btn-danger" onclick="removeMetric(${i})" style="padding: 5px 10px; font-size: 12px;">Видалити</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Update checkboxes
+            const checkboxesDiv = document.getElementById('metricsCheckboxes');
+            checkboxesDiv.innerHTML = state.metrics.map(m => `
+                <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f9fafb; border-radius: 8px; cursor: pointer;">
+                    <input type="checkbox" value="${m.id}" onchange="toggleMetricSelection()">
+                    <span>${m.name}</span>
+                </label>
+            `).join('');
+        }
+
+        function addMetric() {
+            const name = document.getElementById('metricName').value;
+            const type = document.getElementById('metricType').value;
+            const direction = document.getElementById('metricDirection').value;
+
+            if (!name) {
+                alert('Введіть назву метрики');
+                return;
+            }
+
+            state.metrics.push({
+                id: Math.max(...state.metrics.map(m => m.id), 0) + 1,
+                name,
+                type,
+                direction,
+                status: 'ACTIVE'
+            });
+
+            document.getElementById('metricName').value = '';
+            renderMetrics();
+        }
+
+        function removeMetric(index) {
+            state.metrics.splice(index, 1);
+            renderMetrics();
+        }
+
+        function toggleMetricSelection() {
+            const checkboxes = document.querySelectorAll('#metricsCheckboxes input[type="checkbox"]');
+            state.selectedMetrics = {};
+            state.weights = {};
+
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    const metric = state.metrics.find(m => m.id == cb.value);
+                    state.selectedMetrics[cb.value] = metric;
+                    state.weights[cb.value] = 0;
+                }
+            });
+
+            updateWeightsUI();
+        }
+
+        function updateWeightsUI() {
+            const container = document.getElementById('weightsInput');
+            container.innerHTML = Object.entries(state.selectedMetrics).map(([id, metric]) => `
+                <div class="metric-input">
+                    <div style="flex: 1;">
+                        <strong>${metric.name}</strong>
+                    </div>
+                    <input type="number" placeholder="Вага %" min="0" max="100" step="0.1" 
+                           value="${state.weights[id] || 0}"
+                           onchange="updateWeight(${id}, this.value)">
+                    <div style="text-align: right; min-width: 60px;" id="weight-${id}">
+                        ${state.weights[id] || 0}%
+                    </div>
+                </div>
+            `).join('');
+
+            validateWeights();
+        }
+
+        function updateWeight(id, value) {
+            state.weights[id] = parseFloat(value) || 0;
+            document.getElementById(`weight-${id}`).textContent = state.weights[id] + '%';
+            validateWeights();
+        }
+
+        function validateWeights() {
+            const total = Object.values(state.weights).reduce((a, b) => a + parseFloat(b), 0);
+            const validator = document.getElementById('weightValidator');
+            const isValid = Math.abs(total - 100) < 0.1;
+
+            validator.textContent = `Сума ваг: ${total.toFixed(1)}% (повинна бути 100%)`;
+            validator.className = `weight-validator ${isValid ? 'valid' : 'invalid'}`;
+        }
+
+        function addManager() {
+            const name = document.getElementById('managerName').value;
+            const grade = document.getElementById('managerGrade').value;
+
+            if (!name) {
+                alert('Введіть ім\'я менеджера');
+                return;
+            }
+
+            state.managers.push({
+                id: Date.now(),
+                name,
+                grade
+            });
+
+            document.getElementById('managerName').value = '';
+            renderManagers();
+        }
+
+        function renderManagers() {
+            const div = document.getElementById('managersList');
+            div.innerHTML = state.managers.map(m => `
+                <div style="padding: 10px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span><strong>${m.name}</strong> <span class="badge badge-info">${m.grade}</span></span>
+                    <button class="btn btn-danger" onclick="removeManager(${m.id})" style="padding: 5px 10px; font-size: 12px;">Видалити</button>
+                </div>
+            `).join('');
+        }
+
+        function removeManager(id) {
+            state.managers = state.managers.filter(m => m.id !== id);
+            renderManagers();
+        }
+
+        function updateBonusUI() {
+            const model = document.getElementById('bonusModel').value;
+            document.getElementById('thresholdGroup').style.display = model === 'THRESHOLD' ? 'block' : 'none';
+            document.getElementById('coefficientGroup').style.display = model === 'THRESHOLD' ? 'block' : 'none';
+        }
+
+        function saveConfiguration() {
+            if (Object.keys(state.selectedMetrics).length === 0) {
+                alert('Виберіть метрики');
+                return;
+            }
+
+            const total = Object.values(state.weights).reduce((a, b) => a + parseFloat(b), 0);
+            if (Math.abs(total - 100) > 0.1) {
+                alert('Сума ваг повинна дорівнювати 100%');
+                return;
+            }
+
+            if (state.managers.length === 0) {
+                alert('Додайте менеджерів');
+                return;
+            }
+
+            state.configuration = {
+                team: document.getElementById('teamName').value || 'Team',
+                period: document.getElementById('period').value,
+                metrics: state.selectedMetrics,
+                weights: state.weights,
+                managers: state.managers,
+                bonusModel: document.getElementById('bonusModel').value,
+                baseBonus: parseFloat(document.getElementById('baseBonus').value),
+                threshold: document.getElementById('threshold').value ? parseFloat(document.getElementById('threshold').value) : 80,
+                maxCoefficient: document.getElementById('maxCoefficient').value ? parseFloat(document.getElementById('maxCoefficient').value) : 1.2,
+            };
+
+            initializeDataEntry();
+            alert('✅ Конфігурація збережена!');
+        }
+
+        function initializeDataEntry() {
+            const area = document.getElementById('dataEntryArea');
+            area.innerHTML = `
+                <h3 style="margin-bottom: 20px; color: #333;">Введіть фактичні дані для команди: <strong>${state.configuration.team}</strong></h3>
+                <div id="dataInputs"></div>
+                <button class="btn btn-success" onclick="calculateResults()" style="width: 100%; margin-top: 20px; padding: 12px; font-size: 15px;">📊 Розрахувати результаты</button>
+            `;
+
+            const container = document.getElementById('dataInputs');
+            let html = '';
+
+            state.configuration.managers.forEach(manager => {
+                html += `
+                    <div style="margin-bottom: 25px; padding: 20px; background: #f9fafb; border-radius: 8px;">
+                        <h4 style="margin-bottom: 15px; color: #333;">👤 ${manager.name} (${manager.grade})</h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                `;
+
+                Object.entries(state.configuration.metrics).forEach(([metricId, metric]) => {
+                    const key = `data_${manager.id}_${metricId}`;
+                    html += `
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #666;">
+                                ${metric.name}
+                            </label>
+                            <input type="number" step="0.1" placeholder="Факт" class="data-input" 
+                                   data-manager="${manager.id}" data-metric="${metricId}">
+                            <small style="color: #999; margin-top: 3px; display: block;">План: 100 ${metric.type === 'PERCENT' ? '%' : metric.type === 'NUMBER' ? 'шт.' : '$'}</small>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            state.data = {};
+        }
+
+        // KPI Calculations
+        function calculateMetricPercentage(factValue, planValue, direction) {
+            if (!planValue || planValue === 0) return 0;
+            let percentage;
+            if (direction === 'LESS_IS_BETTER') {
+                percentage = (planValue / factValue) * 100;
+            } else {
+                percentage = (factValue / planValue) * 100;
+            }
+            return Math.round(percentage * 100) / 100;
+        }
+
+        function calculateManagerKPI(manager, data) {
+            let totalWeighted = 0;
+            Object.entries(state.configuration.metrics).forEach(([metricId, metric]) => {
+                const fact = parseFloat(data[`${manager.id}_${metricId}`]) || 0;
+                const percentage = calculateMetricPercentage(fact, 100, metric.direction);
+                const weight = parseFloat(state.configuration.weights[metricId]) || 0;
+                totalWeighted += (percentage * weight) / 100;
+            });
+            return Math.round(totalWeighted * 100) / 100;
+        }
+
+        function calculateBonus(kpiPercentage, model, params) {
+            switch(model) {
+                case 'LINEAR':
+                    return params.baseBonus * (kpiPercentage / 100);
+                case 'THRESHOLD':
+                    if (kpiPercentage < params.threshold) return 0;
+                    return params.baseBonus * (kpiPercentage / 100) * params.maxCoefficient;
+                case 'MATRIX':
+                    if (kpiPercentage < 70) return 0;
+                    if (kpiPercentage < 90) return params.baseBonus * 0.5;
+                    if (kpiPercentage < 100) return params.baseBonus;
+                    return params.baseBonus * 1.2;
+                default:
+                    return 0;
+            }
+        }
+
+        function calculateResults() {
+            // Gather data
+            document.querySelectorAll('.data-input').forEach(input => {
+                state.data[`${input.dataset.manager}_${input.dataset.metric}`] = input.value;
+            });
+
+            const results = [];
+            state.configuration.managers.forEach(manager => {
+                const kpiPercent = calculateManagerKPI(manager, state.data);
+                const bonus = calculateBonus(kpiPercent, state.configuration.bonusModel, {
+                    baseBonus: state.configuration.baseBonus,
+                    threshold: state.configuration.threshold,
+                    maxCoefficient: state.configuration.maxCoefficient
+                });
+
+                results.push({
+                    manager,
+                    kpiPercent,
+                    bonus: Math.round(bonus * 100) / 100
+                });
+            });
+
+            displayResults(results);
+        }
+
+        function displayResults(results) {
+            const area = document.getElementById('resultsArea');
+            
+            const totalBonus = results.reduce((sum, r) => sum + r.bonus, 0);
+            const avgKPI = Math.round((results.reduce((sum, r) => sum + r.kpiPercent, 0) / results.length) * 100) / 100;
+
+            let html = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Середній KPI</div>
+                        <div class="value">${avgKPI}%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Всього бонусів</div>
+                        <div class="value">$${totalBonus.toLocaleString()}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Менеджерів</div>
+                        <div class="value">${results.length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Модель</div>
+                        <div class="value">${state.configuration.bonusModel}</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Менеджер</th>
+                                <th>Грейд</th>
+                                <th>% KPI</th>
+                                <th>Статус</th>
+                                <th>Бонус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            results.forEach(r => {
+                let statusBadge = 'badge-danger';
+                let status = '❌ Невиконано';
+                
+                if (r.kpiPercent >= 100) {
+                    statusBadge = 'badge-success';
+                    status = '✅ Перевиконано';
+                } else if (r.kpiPercent >= 90) {
+                    statusBadge = 'badge-success';
+                    status = '✅ Виконано';
+                } else if (r.kpiPercent >= 70) {
+                    statusBadge = 'badge-warning';
+                    status = '⚠️ Частково';
+                }
+
+                html += `
+                    <tr>
+                        <td><strong>${r.manager.name}</strong></td>
+                        <td><span class="badge badge-info">${r.manager.grade}</span></td>
+                        <td><span class="percentage">${r.kpiPercent}%</span></td>
+                        <td><span class="badge ${statusBadge}">${status}</span></td>
+                        <td><span class="bonus-display">$${r.bonus.toLocaleString()}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            area.innerHTML = html;
+        }
+
+        // Initialize
+        renderMetrics();
+        updateBonusUI();
+    </script>
+</body>
+</html>

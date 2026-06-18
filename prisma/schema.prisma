@@ -1,0 +1,265 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  passwordHash  String
+  name          String?
+  role          UserRole
+  departmentId  String?
+  department    Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
+  
+  // Relations
+  createdConfigurations KPIConfiguration[] @relation("CreatedBy")
+  approvedConfigurations KPIConfiguration[] @relation("ApprovedBy")
+  managerProfiles TeamManager[] @relation("ManagerUser")
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  @@index([email])
+}
+
+enum UserRole {
+  OPERATIONS
+  TEAM_LEAD
+  MANAGER
+  LEADERSHIP
+}
+
+model Department {
+  id            String     @id @default(cuid())
+  name          String     @unique
+  description   String?
+  
+  // Relations
+  users         User[]     @relation("DepartmentUsers")
+  configurations KPIConfiguration[]
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// ============ БАНК МЕТРИК ============
+model Metric {
+  id                String     @id @default(cuid())
+  name              String     @unique
+  description       String?
+  valueType         MetricValueType
+  unit              String?
+  direction         MetricDirection
+  status            MetricStatus @default(ACTIVE)
+  
+  // Для яких відділів обов'язкова
+  requiredForDepartments String[] @default([])
+  
+  // Relations
+  configurationMetrics ConfigurationMetric[]
+  currentData       CurrentData[]
+  historyMetrics    HistoryMetric[]
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  @@index([status])
+}
+
+enum MetricValueType {
+  NUMBER
+  PERCENT
+  RATING
+}
+
+enum MetricDirection {
+  MORE_IS_BETTER
+  LESS_IS_BETTER
+}
+
+enum MetricStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// ============ KPI КОНФІГУРАЦІЇ ============
+model KPIConfiguration {
+  id                String     @id @default(cuid())
+  departmentId      String
+  department        Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  teamLeadId        String
+  teamLead          User       @relation("CreatedBy", fields: [teamLeadId], references: [id])
+  
+  period            String     // YYYYMM формат, например "202401"
+  status            ConfigurationStatus @default(DRAFT)
+  
+  // Бонусна модель
+  bonusModel        BonusModel
+  bonusParameters   Json       // {threshold: 80, maxCoefficient: 1.2, baseBonus: 1000}
+  
+  // Коментар від тімліда при погодженні
+  teamLeadComment   String?
+  
+  // Хто одобрив
+  approvedById      String?
+  approvedBy        User?      @relation("ApprovedBy", fields: [approvedById], references: [id])
+  
+  // Relations
+  metrics           ConfigurationMetric[]
+  managers          TeamManager[]
+  currentData       CurrentData[]
+  history           HistoryRecord[]
+  
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  approvedAt        DateTime?
+  
+  @@unique([departmentId, period])
+  @@index([status])
+  @@index([period])
+}
+
+enum ConfigurationStatus {
+  DRAFT
+  ON_APPROVAL
+  ACTIVE
+  ON_CORRECTION
+  ARCHIVED
+}
+
+enum BonusModel {
+  LINEAR
+  THRESHOLD
+  MATRIX
+}
+
+model ConfigurationMetric {
+  id                String     @id @default(cuid())
+  configurationId   String
+  configuration     KPIConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  
+  metricId          String
+  metric            Metric     @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  
+  weight            Decimal    @db.Decimal(5, 2) // 40.50
+  
+  createdAt         DateTime   @default(now())
+  
+  @@unique([configurationId, metricId])
+}
+
+// ============ МЕНЕДЖЕРИ ============
+model TeamManager {
+  id                String     @id @default(cuid())
+  configurationId   String
+  configuration     KPIConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  
+  userId            String?
+  user              User?      @relation("ManagerUser", fields: [userId], references: [id])
+  
+  name              String
+  grade             ManagerGrade
+  
+  // Relations
+  currentData       CurrentData[]
+  historyRecords    HistoryRecord[]
+  
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  
+  @@unique([configurationId, name])
+}
+
+enum ManagerGrade {
+  JUNIOR
+  MIDDLE
+  SENIOR
+}
+
+// ============ ФАКТИЧНІ ДАНІ (ПОТОЧНИЙ МІСЯЦЬ) ============
+model CurrentData {
+  id                String     @id @default(cuid())
+  configurationId   String
+  configuration     KPIConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  
+  managerId         String
+  manager           TeamManager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  
+  metricId          String
+  metric            Metric     @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  
+  planValue         Decimal?
+  factValue         Decimal?
+  
+  updatedAt         DateTime   @updatedAt
+  updatedBy         String? // ID користувача який оновив
+  
+  @@unique([configurationId, managerId, metricId])
+}
+
+// ============ ІСТОРІЯ (АРХІВ ЗАКРИТИХ МІСЯЦІВ) ============
+model HistoryRecord {
+  id                String     @id @default(cuid())
+  configurationId   String
+  configuration     KPIConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  
+  managerId         String
+  manager           TeamManager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  
+  period            String     // YYYYMM формат
+  
+  // Агреговані результати для менеджера за період
+  kpiPercentage     Decimal    @db.Decimal(5, 2) // 85.50
+  bonusAmount       Decimal    @db.Decimal(10, 2) // 1500.00
+  
+  // Коментар від тімліда
+  comment           String?
+  
+  // Relations до деталей (кожна метрика)
+  metrics           HistoryMetric[]
+  
+  savedAt           DateTime   @default(now())
+  
+  @@unique([configurationId, managerId, period])
+  @@index([period])
+}
+
+model HistoryMetric {
+  id                String     @id @default(cuid())
+  historyRecordId   String
+  historyRecord     HistoryRecord @relation(fields: [historyRecordId], references: [id], onDelete: Cascade)
+  
+  metricId          String
+  metric            Metric     @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  
+  planValue         Decimal?
+  factValue         Decimal?
+  metricPercentage  Decimal    @db.Decimal(5, 2) // % виконання по метриці
+  weight            Decimal    @db.Decimal(5, 2) // вага метрики в KPI
+  
+  @@unique([historyRecordId, metricId])
+}
+
+// ============ АУДИТ ============
+model AuditLog {
+  id                String     @id @default(cuid())
+  userId            String?
+  action            String     // CREATE, UPDATE, DELETE, APPROVE
+  tableName         String
+  recordId          String
+  oldValues         Json?
+  newValues         Json?
+  
+  createdAt         DateTime   @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
