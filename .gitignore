@@ -9,6 +9,8 @@
 # Next.js
 /.next/
 /out/
+next-env.d.ts
+tsconfig.tsbuildinfo
 
 # Production
 /build
