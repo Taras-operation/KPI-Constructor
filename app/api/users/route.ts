@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
+import { hashPassword } from '@/lib/auth';
+import { isRole } from '@/lib/roles';
 
 // GET — список користувачів з опційним фільтром по ролі / відділу. Тільки OPERATIONS.
 export async function GET(request: NextRequest) {
@@ -25,4 +27,38 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json(users);
+}
+
+// POST — створення користувача з будь-якою роллю (Q-04). Тільки OPERATIONS.
+export async function POST(request: NextRequest) {
+  const guard = await requireRole(['OPERATIONS']);
+  if ('error' in guard) return guard.error;
+
+  try {
+    const { email, password, name, role, departmentId } = await request.json();
+
+    if (!email || !password || !name || !role) {
+      return NextResponse.json({ error: 'Email, пароль, ім\'я і роль обов\'язкові' }, { status: 400 });
+    }
+    if (!isRole(role)) {
+      return NextResponse.json({ error: 'Невірна роль' }, { status: 400 });
+    }
+    if (String(password).length < 6) {
+      return NextResponse.json({ error: 'Пароль повинен містити мінімум 6 символів' }, { status: 400 });
+    }
+
+    const passwordHash = await hashPassword(password);
+    const user = await prisma.user.create({
+      data: { email, passwordHash, name, role, departmentId: departmentId || null },
+      select: { id: true, name: true, email: true, role: true, departmentId: true },
+    });
+
+    return NextResponse.json(user, { status: 201 });
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return NextResponse.json({ error: 'Користувач з таким email вже існує' }, { status: 400 });
+    }
+    console.error('Помилка при створенні користувача:', error);
+    return NextResponse.json({ error: 'Помилка при створенні користувача' }, { status: 500 });
+  }
 }
