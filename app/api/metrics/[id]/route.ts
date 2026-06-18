@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(
   _request: NextRequest,
@@ -66,6 +67,14 @@ export async function PUT(
         ...(data.requiredForDepartments && { requiredForDepartments: data.requiredForDepartments }),
         ...(data.status && { status: data.status }),
       },
+    });
+
+    await logAudit({
+      userId: user.userId,
+      action: data.status ? 'STATUS' : 'UPDATE',
+      tableName: 'Metric',
+      recordId: id,
+      newValues: data,
     });
 
     return NextResponse.json(metric);

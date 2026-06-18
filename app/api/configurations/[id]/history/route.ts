@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { buildFront } from '@/lib/front-data';
+import { logAudit } from '@/lib/audit';
 
 // GET — збережені записи HISTORY для конфігурації.
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -76,6 +77,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
     )
   );
+
+  await logAudit({
+    userId: guard.user.userId,
+    action: 'CREATE',
+    tableName: 'HistoryRecord',
+    recordId: id,
+    newValues: { period: config.period, records: results.length },
+  });
 
   return NextResponse.json({ message: 'Місяць збережено в HISTORY', records: results.length }, { status: 201 });
 }

@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
+import { logAudit } from '@/lib/audit';
 
 // PUT — оновлення відділу. Тільки OPERATIONS.
 export async function PUT(
@@ -59,6 +60,7 @@ export async function DELETE(
     }
 
     await prisma.department.delete({ where: { id } });
+    await logAudit({ userId: guard.user.userId, action: 'DELETE', tableName: 'Department', recordId: id });
     return NextResponse.json({ message: 'Відділ видалено' });
   } catch (error: any) {
     if (error.code === 'P2025') {

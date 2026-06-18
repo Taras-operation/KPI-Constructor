@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
+import { logAudit } from '@/lib/audit';
 
 type Action = 'SEND_FOR_APPROVAL' | 'ACTIVATE' | 'ARCHIVE' | 'APPROVE' | 'REQUEST_CORRECTION';
 
@@ -64,6 +65,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const updated = await prisma.kPIConfiguration.update({ where: { id }, data });
+
+  await logAudit({
+    userId: guard.user.userId,
+    action: action === 'APPROVE' ? 'APPROVE' : 'STATUS',
+    tableName: 'KPIConfiguration',
+    recordId: id,
+    oldValues: { status: config.status },
+    newValues: { action, status: updated.status, comment: comment ?? undefined },
+  });
+
   return NextResponse.json(serialize(updated));
 }
 

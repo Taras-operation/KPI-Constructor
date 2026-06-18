@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { validateConfigInput, writeConfigChildren, type ConfigInput } from '@/lib/configuration';
+import { logAudit } from '@/lib/audit';
 
 // GET — список конфігурацій. OPERATIONS бачить усі; TEAM_LEAD — лише свої.
 export async function GET(request: NextRequest) {
@@ -84,6 +85,14 @@ export async function POST(request: NextRequest) {
       });
       await writeConfigChildren(tx, cfg.id, input);
       return cfg;
+    });
+
+    await logAudit({
+      userId: guard.user.userId,
+      action: 'CREATE',
+      tableName: 'KPIConfiguration',
+      recordId: config.id,
+      newValues: { departmentId, teamLeadId, period, bonusModel },
     });
 
     return NextResponse.json(serialize(config), { status: 201 });

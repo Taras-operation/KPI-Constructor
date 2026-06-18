@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { validateConfigInput, writeConfigChildren, type ConfigInput } from '@/lib/configuration';
+import { logAudit } from '@/lib/audit';
 
 const EDITABLE_STATUSES = ['DRAFT', 'ON_CORRECTION'];
 
@@ -87,6 +88,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       await writeConfigChildren(tx, id, input);
     });
 
+    await logAudit({ userId: guard.user.userId, action: 'UPDATE', tableName: 'KPIConfiguration', recordId: id });
+
     const updated = await loadFull(id);
     return NextResponse.json(serialize(updated));
   } catch (error: any) {
@@ -114,5 +117,6 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   }
 
   await prisma.kPIConfiguration.delete({ where: { id } });
+  await logAudit({ userId: guard.user.userId, action: 'DELETE', tableName: 'KPIConfiguration', recordId: id });
   return NextResponse.json({ message: 'Конфігурацію видалено' });
 }

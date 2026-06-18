@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
 
 // GET — банк метрик з фільтрами (F-01): status, valueType, department.
 export async function GET(request: NextRequest) {
@@ -77,6 +78,8 @@ export async function POST(request: NextRequest) {
         requiredForDepartments: requiredForDepartments || [],
       },
     });
+
+    await logAudit({ userId: user.userId, action: 'CREATE', tableName: 'Metric', recordId: metric.id, newValues: { name } });
 
     return NextResponse.json(metric, { status: 201 });
   } catch (error: any) {

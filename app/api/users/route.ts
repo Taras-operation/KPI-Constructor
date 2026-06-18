@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { hashPassword } from '@/lib/auth';
 import { isRole } from '@/lib/roles';
+import { logAudit } from '@/lib/audit';
 
 // GET — список користувачів з опційним фільтром по ролі / відділу. Тільки OPERATIONS.
 export async function GET(request: NextRequest) {
@@ -52,6 +53,8 @@ export async function POST(request: NextRequest) {
       data: { email, passwordHash, name, role, departmentId: departmentId || null },
       select: { id: true, name: true, email: true, role: true, departmentId: true },
     });
+
+    await logAudit({ userId: guard.user.userId, action: 'CREATE', tableName: 'User', recordId: user.id, newValues: { email, role } });
 
     return NextResponse.json(user, { status: 201 });
   } catch (error: any) {

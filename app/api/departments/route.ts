@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
+import { logAudit } from '@/lib/audit';
 
 // GET — список відділів. Доступний будь-якому авторизованому користувачу.
 export async function GET() {
@@ -32,6 +33,8 @@ export async function POST(request: NextRequest) {
     const department = await prisma.department.create({
       data: { name: name.trim(), description: description?.trim() || null },
     });
+
+    await logAudit({ userId: guard.user.userId, action: 'CREATE', tableName: 'Department', recordId: department.id, newValues: { name: department.name } });
 
     return NextResponse.json(department, { status: 201 });
   } catch (error: any) {
