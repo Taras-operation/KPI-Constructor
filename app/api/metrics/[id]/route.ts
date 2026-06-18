@@ -5,8 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -17,8 +17,9 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
     const metric = await prisma.metric.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!metric) {
@@ -40,7 +41,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -51,10 +52,11 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const data = await request.json();
 
     const metric = await prisma.metric.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(data.name && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
@@ -85,8 +87,8 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -97,8 +99,9 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
     await prisma.metric.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Метрика видалена' });

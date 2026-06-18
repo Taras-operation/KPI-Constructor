@@ -2,7 +2,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { hashPassword, generateToken, setAuthCookie } from '@/lib/auth';
+import { hashPassword, generateToken } from '@/lib/auth';
+import { SELF_REGISTER_ROLES } from '@/lib/roles';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Всі поля обов\'язкові' },
         { status: 400 }
+      );
+    }
+
+    // Q-04: самостійно можна зареєструватись лише в дозволених ролях (MANAGER).
+    // Привілейовані ролі (OPERATIONS / LEADERSHIP / TEAM_LEAD) створює лише Operations.
+    if (!SELF_REGISTER_ROLES.includes(role)) {
+      return NextResponse.json(
+        { error: 'Реєстрація доступна лише для ролі «Менеджер»' },
+        { status: 403 }
       );
     }
 

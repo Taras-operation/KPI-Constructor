@@ -32,9 +32,10 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * Створюємо JWT токен
  */
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
+  const options: jwt.SignOptions = {
+    expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+  };
+  return jwt.sign(payload, JWT_SECRET, options);
 }
 
 /**

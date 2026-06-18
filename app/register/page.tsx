@@ -61,8 +61,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // Перенаправляємо на дашборд
-      router.push('/operations');
+      // Перенаправляємо на дашборд менеджера
+      router.push('/manager');
     } catch (err) {
       setError('Помилка при підключенні до сервера');
     } finally {
@@ -122,17 +122,15 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Роль
               </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              >
-                <option value="MANAGER">Менеджер</option>
-                <option value="TEAM_LEAD">Тімлід</option>
-                <option value="OPERATIONS">Operations</option>
-                <option value="LEADERSHIP">Керівництво</option>
-              </select>
+              <input
+                type="text"
+                value="Менеджер"
+                disabled
+                className="w-full px-4 py-2 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Привілейовані ролі створює Operations-команда.
+              </p>
             </div>
 
             <div>
