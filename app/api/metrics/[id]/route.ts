@@ -86,38 +86,5 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== 'OPERATIONS') {
-      return NextResponse.json(
-        { error: 'Доступ заборонений' },
-        { status: 403 }
-      );
-    }
-
-    const { id } = await params;
-    await prisma.metric.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ message: 'Метрика видалена' });
-  } catch (error: any) {
-    console.error('Помилка при видаленні метрики:', error);
-
-    if (error.code === 'P2025') {
-      return NextResponse.json(
-        { error: 'Метрика не знайдена' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Помилка при видаленні метрики' },
-      { status: 500 }
-    );
-  }
-}
+// Метрики не видаляються (ТЗ F-04, розд. 7 «Незмінний HISTORY») — лише архівуються
+// через PUT { status: 'ARCHIVED' }. DELETE свідомо не реалізовано.

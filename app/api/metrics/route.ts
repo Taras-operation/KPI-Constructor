@@ -1,9 +1,11 @@
 // app/api/metrics/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
+// GET — банк метрик з фільтрами (F-01): status, valueType, department.
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -16,11 +18,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const valueType = searchParams.get('valueType');
+    const department = searchParams.get('department');
+
+    const where: Prisma.MetricWhereInput = {};
+    if (status) where.status = status as any;
+    if (valueType) where.valueType = valueType as any;
+    if (department) where.requiredForDepartments = { has: department };
 
     const metrics = await prisma.metric.findMany({
-      where: status
-        ? { status: status as any }
-        : undefined,
+      where,
       orderBy: { name: 'asc' },
     });
 

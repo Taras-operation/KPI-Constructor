@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/session';
 import DashboardShell from '@/components/DashboardShell';
 import DepartmentsManager from '@/components/DepartmentsManager';
+import MetricsManager from '@/components/MetricsManager';
 
 export default async function OperationsPage() {
   const user = await getSessionUser();
@@ -13,11 +14,11 @@ export default async function OperationsPage() {
       <h1 className="text-2xl font-bold text-white mb-6">Робоче місце Operations</h1>
 
       <div className="space-y-6">
+        <MetricsManager />
         <DepartmentsManager />
 
         <div className="bg-white/10 border border-white/15 rounded-lg p-6 text-white/70 text-sm">
-          Далі тут з&apos;являться: банк метрик, конструктор KPI-конфігурацій,
-          відправка на погодження та зведений контроль.
+          Далі тут з&apos;явиться конструктор KPI-конфігурацій та відправка на погодження.
         </div>
       </div>
     </DashboardShell>
