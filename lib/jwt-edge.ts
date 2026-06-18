@@ -4,8 +4,9 @@
 
 import { jwtVerify } from 'jose';
 import type { JWTPayload } from './auth';
+import { JWT_SECRET } from './env';
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
+const secret = new TextEncoder().encode(JWT_SECRET);
 
 export async function verifyTokenEdge(token: string): Promise<JWTPayload | null> {
   try {
