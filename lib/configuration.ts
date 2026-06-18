@@ -12,6 +12,7 @@ export interface ConfigMetricInput {
 export interface ConfigManagerInput {
   name: string;
   grade: ManagerGrade;
+  userId?: string | null; // опційна прив'язка до акаунта менеджера
 }
 
 // plans[managerIndex][metricId] = планове значення
@@ -79,7 +80,7 @@ export async function writeConfigChildren(
   for (let idx = 0; idx < input.managers.length; idx++) {
     const mgr = input.managers[idx];
     const created = await tx.teamManager.create({
-      data: { configurationId, name: mgr.name.trim(), grade: mgr.grade },
+      data: { configurationId, name: mgr.name.trim(), grade: mgr.grade, userId: mgr.userId || null },
     });
 
     const mgrPlans = input.plans?.[idx];

@@ -33,6 +33,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [managerUsers, setManagerUsers] = useState<Lead[]>([]);
   const [allMetrics, setAllMetrics] = useState<Metric[]>([]);
 
   // Крок 1
@@ -48,8 +49,8 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
   });
 
   // Крок 3: менеджери
-  const [managers, setManagers] = useState<{ name: string; grade: Grade }[]>(
-    initial?.managers?.map((m: any) => ({ name: m.name, grade: m.grade })) ?? [{ name: '', grade: 'MIDDLE' }]
+  const [managers, setManagers] = useState<{ name: string; grade: Grade; userId: string }[]>(
+    initial?.managers?.map((m: any) => ({ name: m.name, grade: m.grade, userId: m.userId ?? '' })) ?? [{ name: '', grade: 'MIDDLE', userId: '' }]
   );
 
   // Крок 4: плани plans[mgrIndex][metricId]
@@ -78,6 +79,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
   useEffect(() => {
     fetch('/api/departments').then((r) => r.json()).then(setDepartments).catch(() => {});
     fetch('/api/users?role=TEAM_LEAD').then((r) => r.json()).then(setLeads).catch(() => {});
+    fetch('/api/users?role=MANAGER').then((r) => r.json()).then(setManagerUsers).catch(() => {});
     fetch('/api/metrics?status=ACTIVE').then((r) => r.json()).then(setAllMetrics).catch(() => {});
   }, []);
 
@@ -110,11 +112,11 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     });
   }
 
-  function setManager(i: number, patch: Partial<{ name: string; grade: Grade }>) {
+  function setManager(i: number, patch: Partial<{ name: string; grade: Grade; userId: string }>) {
     setManagers((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   }
   function addManager() {
-    setManagers((prev) => [...prev, { name: '', grade: 'MIDDLE' }]);
+    setManagers((prev) => [...prev, { name: '', grade: 'MIDDLE', userId: '' }]);
   }
   function removeManager(i: number) {
     setManagers((prev) => prev.filter((_, idx) => idx !== i));
@@ -153,7 +155,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
       bonusModel,
       bonusParameters,
       metrics: selectedMetricIds.map((id) => ({ metricId: id, weight: parseFloat(weights[id]) || 0 })),
-      managers: managers.map((m) => ({ name: m.name.trim(), grade: m.grade })),
+      managers: managers.map((m) => ({ name: m.name.trim(), grade: m.grade, userId: m.userId || null })),
       plans,
     };
 
@@ -270,6 +272,15 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                   />
                   <select value={m.grade} onChange={(e) => setManager(i, { grade: e.target.value as Grade })} className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900">
                     {GRADES.map((g) => <option key={g} value={g}>{GRADE_LABELS[g]}</option>)}
+                  </select>
+                  <select
+                    value={m.userId}
+                    onChange={(e) => setManager(i, { userId: e.target.value })}
+                    title="Прив'язати до акаунта менеджера (для його дашборду)"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900 max-w-[12rem]"
+                  >
+                    <option value="">— без акаунта —</option>
+                    {managerUsers.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
                   </select>
                   <button onClick={() => removeManager(i)} className="text-gray-400 hover:text-red-600 px-2">✕</button>
                 </div>
