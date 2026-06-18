@@ -6,12 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
-
-interface Entry {
-  managerId: string;
-  metricId: string;
-  factValue: number | string | null;
-}
+import { parseBody, dataSchema } from '@/lib/validation';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireRole(['OPERATIONS', 'TEAM_LEAD']);
@@ -37,10 +32,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Місяць збережено в HISTORY — дані заблоковані' }, { status: 400 });
   }
 
-  const { entries } = (await request.json()) as { entries: Entry[] };
-  if (!Array.isArray(entries)) {
-    return NextResponse.json({ error: 'Невірний формат даних' }, { status: 400 });
-  }
+  const parsed = await parseBody(request, dataSchema);
+  if ('error' in parsed) return parsed.error;
+  const { entries } = parsed.data;
 
   const validMetrics = new Set(config.metrics.map((m) => m.metricId));
   const validManagers = new Set(config.managers.map((m) => m.id));

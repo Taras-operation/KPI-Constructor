@@ -5,8 +5,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { hashPassword } from '@/lib/auth';
-import { isRole } from '@/lib/roles';
 import { logAudit } from '@/lib/audit';
+import { parseBody, userCreateSchema } from '@/lib/validation';
 
 // GET — список користувачів з опційним фільтром по ролі / відділу. Тільки OPERATIONS.
 export async function GET(request: NextRequest) {
@@ -36,17 +36,9 @@ export async function POST(request: NextRequest) {
   if ('error' in guard) return guard.error;
 
   try {
-    const { email, password, name, role, departmentId } = await request.json();
-
-    if (!email || !password || !name || !role) {
-      return NextResponse.json({ error: 'Email, пароль, ім\'я і роль обов\'язкові' }, { status: 400 });
-    }
-    if (!isRole(role)) {
-      return NextResponse.json({ error: 'Невірна роль' }, { status: 400 });
-    }
-    if (String(password).length < 6) {
-      return NextResponse.json({ error: 'Пароль повинен містити мінімум 6 символів' }, { status: 400 });
-    }
+    const parsed = await parseBody(request, userCreateSchema);
+    if ('error' in parsed) return parsed.error;
+    const { email, password, name, role, departmentId } = parsed.data;
 
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({

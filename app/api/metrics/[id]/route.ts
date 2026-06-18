@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { parseBody, metricUpdateSchema } from '@/lib/validation';
 
 export async function GET(
   _request: NextRequest,
@@ -54,7 +55,9 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const data = await request.json();
+    const parsed = await parseBody(request, metricUpdateSchema);
+    if ('error' in parsed) return parsed.error;
+    const data = parsed.data;
 
     const metric = await prisma.metric.update({
       where: { id },

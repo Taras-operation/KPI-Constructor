@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
+import { parseBody, metricCreateSchema } from '@/lib/validation';
 
 // GET — банк метрик з фільтрами (F-01): status, valueType, department.
 export async function GET(request: NextRequest) {
@@ -52,21 +53,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
-      name,
-      description,
-      valueType,
-      unit,
-      direction,
-      requiredForDepartments,
-    } = await request.json();
-
-    if (!name || !valueType || !direction) {
-      return NextResponse.json(
-        { error: 'Обов\'язкові поля не заповнені' },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseBody(request, metricCreateSchema);
+    if ('error' in parsed) return parsed.error;
+    const { name, description, valueType, unit, direction, requiredForDepartments } = parsed.data;
 
     const metric = await prisma.metric.create({
       data: {

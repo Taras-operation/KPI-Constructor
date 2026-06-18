@@ -4,17 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, generateToken } from '@/lib/auth';
 import { SELF_REGISTER_ROLES } from '@/lib/roles';
+import { parseBody, registerSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, role, departmentId } = await request.json();
-
-    if (!email || !password || !name || !role) {
-      return NextResponse.json(
-        { error: 'Всі поля обов\'язкові' },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseBody(request, registerSchema);
+    if ('error' in parsed) return parsed.error;
+    const { email, password, name, role, departmentId } = parsed.data;
 
     // Q-04: самостійно можна зареєструватись лише в дозволених ролях (MANAGER).
     // Привілейовані ролі (OPERATIONS / LEADERSHIP / TEAM_LEAD) створює лише Operations.

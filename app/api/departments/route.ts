@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { logAudit } from '@/lib/audit';
+import { parseBody, departmentCreateSchema } from '@/lib/validation';
 
 // GET — список відділів. Доступний будь-якому авторизованому користувачу.
 export async function GET() {
@@ -24,11 +25,9 @@ export async function POST(request: NextRequest) {
   if ('error' in guard) return guard.error;
 
   try {
-    const { name, description } = await request.json();
-
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: 'Назва відділу обов\'язкова' }, { status: 400 });
-    }
+    const parsed = await parseBody(request, departmentCreateSchema);
+    if ('error' in parsed) return parsed.error;
+    const { name, description } = parsed.data;
 
     const department = await prisma.department.create({
       data: { name: name.trim(), description: description?.trim() || null },

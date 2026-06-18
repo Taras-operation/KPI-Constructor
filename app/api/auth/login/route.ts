@@ -3,17 +3,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth';
+import { parseBody, loginSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email и пароль обов\'язкові' },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseBody(request, loginSchema);
+    if ('error' in parsed) return parsed.error;
+    const { email, password } = parsed.data;
 
     // Шукаємо користувача
     const user = await prisma.user.findUnique({

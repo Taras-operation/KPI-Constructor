@@ -6,15 +6,16 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { logAudit } from '@/lib/audit';
-
-type Action = 'SEND_FOR_APPROVAL' | 'ACTIVATE' | 'ARCHIVE' | 'APPROVE' | 'REQUEST_CORRECTION';
+import { parseBody, statusSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireRole(['OPERATIONS', 'TEAM_LEAD']);
   if ('error' in guard) return guard.error;
 
   const { id } = await params;
-  const { action, comment } = (await request.json()) as { action: Action; comment?: string };
+  const parsed = await parseBody(request, statusSchema);
+  if ('error' in parsed) return parsed.error;
+  const { action, comment } = parsed.data;
 
   const config = await prisma.kPIConfiguration.findUnique({ where: { id } });
   if (!config) return NextResponse.json({ error: 'Конфігурацію не знайдено' }, { status: 404 });

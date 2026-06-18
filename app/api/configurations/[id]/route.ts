@@ -6,6 +6,7 @@ import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { validateConfigInput, writeConfigChildren, type ConfigInput } from '@/lib/configuration';
 import { logAudit } from '@/lib/audit';
+import { parseBody, configurationUpdateSchema } from '@/lib/validation';
 
 const EDITABLE_STATUSES = ['DRAFT', 'ON_CORRECTION'];
 
@@ -50,17 +51,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
-    const body = await request.json();
+    const parsed = await parseBody(request, configurationUpdateSchema);
+    if ('error' in parsed) return parsed.error;
+    const body = parsed.data;
     const departmentId = body.departmentId ?? existing.departmentId;
     const input: ConfigInput = {
-      metrics: body.metrics ?? [],
-      managers: body.managers ?? [],
+      metrics: body.metrics,
+      managers: body.managers,
       plans: body.plans ?? {},
     };
-
-    if (body.bonusModel && !['LINEAR', 'THRESHOLD', 'MATRIX'].includes(body.bonusModel)) {
-      return NextResponse.json({ error: 'Невірна бонусна модель' }, { status: 400 });
-    }
 
     const requiredMetrics = await prisma.metric.findMany({
       where: { status: 'ACTIVE', requiredForDepartments: { has: departmentId } },

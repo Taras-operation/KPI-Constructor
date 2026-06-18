@@ -7,6 +7,7 @@ import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { validateConfigInput, writeConfigChildren, type ConfigInput } from '@/lib/configuration';
 import { logAudit } from '@/lib/audit';
+import { parseBody, configurationCreateSchema } from '@/lib/validation';
 
 // GET — список конфігурацій. OPERATIONS бачить усі; TEAM_LEAD — лише свої.
 export async function GET(request: NextRequest) {
@@ -41,26 +42,14 @@ export async function POST(request: NextRequest) {
   if ('error' in guard) return guard.error;
 
   try {
-    const body = await request.json();
-    const { departmentId, teamLeadId, period, bonusModel, bonusParameters } = body;
+    const parsed = await parseBody(request, configurationCreateSchema);
+    if ('error' in parsed) return parsed.error;
+    const { departmentId, teamLeadId, period, bonusModel, bonusParameters } = parsed.data;
     const input: ConfigInput = {
-      metrics: body.metrics ?? [],
-      managers: body.managers ?? [],
-      plans: body.plans ?? {},
+      metrics: parsed.data.metrics,
+      managers: parsed.data.managers,
+      plans: parsed.data.plans ?? {},
     };
-
-    if (!departmentId || !teamLeadId || !period) {
-      return NextResponse.json({ error: 'Відділ, тімлід і період обов\'язкові' }, { status: 400 });
-    }
-    if (!/^\d{6}$/.test(period)) {
-      return NextResponse.json({ error: 'Період має бути у форматі YYYYMM' }, { status: 400 });
-    }
-    if (!bonusModel || !['LINEAR', 'THRESHOLD', 'MATRIX'].includes(bonusModel)) {
-      return NextResponse.json({ error: 'Невірна бонусна модель' }, { status: 400 });
-    }
-    if (!bonusParameters || typeof bonusParameters.baseBonus !== 'number') {
-      return NextResponse.json({ error: 'Вкажіть базовий бонус' }, { status: 400 });
-    }
 
     // Обов'язкові для відділу метрики (F-07)
     const requiredMetrics = await prisma.metric.findMany({

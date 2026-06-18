@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/api-auth';
 import { logAudit } from '@/lib/audit';
+import { parseBody, departmentUpdateSchema } from '@/lib/validation';
 
 // PUT — оновлення відділу. Тільки OPERATIONS.
 export async function PUT(
@@ -16,7 +17,9 @@ export async function PUT(
   const { id } = await params;
 
   try {
-    const { name, description } = await request.json();
+    const parsed = await parseBody(request, departmentUpdateSchema);
+    if ('error' in parsed) return parsed.error;
+    const { name, description } = parsed.data;
 
     const department = await prisma.department.update({
       where: { id },

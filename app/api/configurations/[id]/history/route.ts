@@ -8,6 +8,7 @@ import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { buildFront } from '@/lib/front-data';
 import { logAudit } from '@/lib/audit';
+import { parseBody, historySaveSchema } from '@/lib/validation';
 
 // GET — збережені записи HISTORY для конфігурації.
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -52,7 +53,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'Цей місяць вже збережено в HISTORY (дані незмінні)' }, { status: 400 });
   }
 
-  const { comments } = (await request.json().catch(() => ({}))) as { comments?: Record<string, string> };
+  const parsed = await parseBody(request, historySaveSchema);
+  if ('error' in parsed) return parsed.error;
+  const { comments } = parsed.data;
 
   await prisma.$transaction(
     results.map((mgr) =>
