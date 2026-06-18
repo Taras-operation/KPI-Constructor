@@ -4,8 +4,17 @@
 
 import { Decimal } from '@prisma/client/runtime/library';
 
+// Duck-typing: instanceof ненадійний через межі модулів (різні інстанси runtime).
 function isDecimal(value: unknown): value is Decimal {
-  return value instanceof Decimal;
+  return (
+    value instanceof Decimal ||
+    (typeof value === 'object' &&
+      value !== null &&
+      typeof (value as any).toNumber === 'function' &&
+      's' in value &&
+      'e' in value &&
+      'd' in value)
+  );
 }
 
 /**

@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import ConfigurationView from './ConfigurationView';
+import FrontTable from './FrontTable';
 
 interface ConfigRow {
   id: string;
@@ -33,6 +34,7 @@ export default function TeamLeadConfigs() {
   const [detail, setDetail] = useState<any | null>(null);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
+  const [frontId, setFrontId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,13 +113,22 @@ export default function TeamLeadConfigs() {
                   <p className="text-sm text-amber-700 mt-1">Очікує вашого погодження</p>
                 )}
               </div>
-              <button onClick={() => openDetail(c.id)} className="text-blue-600 hover:text-blue-800 text-sm whitespace-nowrap">
-                {c.status === 'ON_APPROVAL' ? 'Розглянути' : 'Переглянути'}
-              </button>
+              <div className="flex flex-col items-end gap-1.5 text-sm whitespace-nowrap">
+                <button onClick={() => openDetail(c.id)} className="text-blue-600 hover:text-blue-800">
+                  {c.status === 'ON_APPROVAL' ? 'Розглянути' : 'Переглянути'}
+                </button>
+                {c.status === 'ACTIVE' && (
+                  <button onClick={() => setFrontId(c.id)} className="text-green-600 hover:text-green-800 font-medium">
+                    FRONT
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {frontId && <FrontTable configId={frontId} onClose={() => setFrontId(null)} />}
 
       {/* Модалка перегляду + погодження */}
       {detail && (
