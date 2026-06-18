@@ -30,7 +30,7 @@ export default function DashboardShell({ role, email, name, children }: Props) {
   return (
     <div className="min-h-screen">
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-gray-900">KPI Constructor</span>
             <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700">
@@ -50,7 +50,7 @@ export default function DashboardShell({ role, email, name, children }: Props) {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+      <main className="max-w-[1600px] mx-auto px-6 lg:px-8 py-8">{children}</main>
     </div>
   );
 }

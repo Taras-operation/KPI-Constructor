@@ -108,19 +108,19 @@ export default function DepartmentsManager() {
       ) : departments.length === 0 ? (
         <p className="text-gray-500 text-sm">Відділів ще немає.</p>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {departments.map((d) => (
-            <div key={d.id} className="py-3 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">{d.name}</p>
-                {d.description && <p className="text-sm text-gray-500">{d.description}</p>}
-                <p className="text-xs text-gray-400 mt-0.5">
+            <div key={d.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between hover:border-blue-300 transition">
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 truncate">{d.name}</p>
+                {d.description && <p className="text-sm text-gray-500 truncate">{d.description}</p>}
+                <p className="text-xs text-gray-400 mt-1">
                   Користувачів: {d._count?.users ?? 0} · Конфігурацій: {d._count?.configurations ?? 0}
                 </p>
               </div>
               <button
                 onClick={() => handleDelete(d.id)}
-                className="text-sm text-gray-400 hover:text-red-600 transition"
+                className="text-sm text-gray-400 hover:text-red-600 transition shrink-0 ml-3"
               >
                 Видалити
               </button>

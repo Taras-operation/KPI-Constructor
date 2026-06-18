@@ -22,9 +22,9 @@ export default function OperationsWorkspace() {
   const [section, setSection] = useState<Section>('dashboard');
 
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      <aside className="md:w-56 shrink-0">
-        <nav className="bg-white/10 border border-white/15 rounded-lg p-2 flex md:flex-col gap-1 overflow-x-auto">
+    <div className="flex flex-col md:flex-row gap-6 items-start min-h-[calc(100vh-12rem)]">
+      <aside className="md:w-60 shrink-0 w-full md:sticky md:top-24">
+        <nav className="bg-white/10 border border-white/15 rounded-xl p-2 flex md:flex-col gap-1 overflow-x-auto">
           {MENU.map((m) => (
             <button
               key={m.key}
