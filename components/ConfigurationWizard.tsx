@@ -35,6 +35,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [managerUsers, setManagerUsers] = useState<Lead[]>([]);
   const [allMetrics, setAllMetrics] = useState<Metric[]>([]);
+  const [benchmarks, setBenchmarks] = useState<Record<string, any>>({});
 
   // Крок 1
   const [departmentId, setDepartmentId] = useState(initial?.departmentId ?? '');
@@ -83,6 +84,15 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     fetch('/api/users?role=MANAGER').then((r) => r.json()).then(setManagerUsers).catch(() => {});
     fetch('/api/metrics?status=ACTIVE').then((r) => r.json()).then(setAllMetrics).catch(() => {});
   }, []);
+
+  // Бенчмарки з HISTORY для обраного відділу
+  useEffect(() => {
+    if (!departmentId) { setBenchmarks({}); return; }
+    fetch(`/api/benchmarks?departmentId=${departmentId}`)
+      .then((r) => r.json())
+      .then((d) => setBenchmarks(d.benchmarks ?? {}))
+      .catch(() => setBenchmarks({}));
+  }, [departmentId]);
 
   const requiredIds = useMemo(
     () => new Set(allMetrics.filter((m) => m.requiredForDepartments.includes(departmentId)).map((m) => m.id)),
@@ -302,6 +312,13 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
               {selectedMetrics.length === 0 || managers.length === 0 ? (
                 <p className="text-gray-500 text-sm">Спочатку оберіть метрики і додайте менеджерів.</p>
               ) : (
+                <>
+                {Object.keys(benchmarks).length > 0 && (
+                  <p className="text-xs text-gray-500 mb-3">
+                    «Норма» — медіана факту з HISTORY по грейду менеджера.
+                    <span className="text-amber-600"> Жовтим</span> підсвічені плани з відхиленням &gt;25%.
+                  </p>
+                )}
                 <table className="text-sm">
                   <thead>
                     <tr className="text-left text-gray-500">
@@ -314,21 +331,37 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                   <tbody>
                     {managers.map((mgr, i) => (
                       <tr key={i} className="border-t border-gray-100">
-                        <td className="py-2 pr-4 text-gray-900 whitespace-nowrap">{mgr.name || `Менеджер ${i + 1}`}</td>
-                        {selectedMetrics.map((m) => (
-                          <td key={m.id} className="py-1 px-2">
-                            <input
-                              type="number" step="any"
-                              value={plans[i]?.[m.id] ?? ''}
-                              onChange={(e) => setPlan(i, m.id, e.target.value)}
-                              className="w-24 px-2 py-1 border border-gray-300 rounded text-gray-900"
-                            />
-                          </td>
-                        ))}
+                        <td className="py-2 pr-4 text-gray-900 whitespace-nowrap">
+                          {mgr.name || `Менеджер ${i + 1}`}
+                          <span className="text-xs text-gray-400 ml-1">{GRADE_LABELS[mgr.grade]}</span>
+                        </td>
+                        {selectedMetrics.map((m) => {
+                          const bench = benchmarks[m.id];
+                          const norm = bench ? (bench.byGrade?.[mgr.grade]?.median ?? bench.overall?.median ?? null) : null;
+                          const val = parseFloat(plans[i]?.[m.id] ?? '');
+                          const deviates = norm != null && norm !== 0 && !isNaN(val) && Math.abs(val - norm) / Math.abs(norm) > 0.25;
+                          return (
+                            <td key={m.id} className="py-1 px-2 align-top">
+                              <input
+                                type="number" step="any"
+                                value={plans[i]?.[m.id] ?? ''}
+                                onChange={(e) => setPlan(i, m.id, e.target.value)}
+                                title={deviates ? 'Значне відхилення від історичної норми (>25%)' : undefined}
+                                className={`w-24 px-2 py-1 border rounded text-gray-900 ${deviates ? 'border-amber-400 bg-amber-50' : 'border-gray-300'}`}
+                              />
+                              {norm != null && (
+                                <div className={`text-xs mt-0.5 ${deviates ? 'text-amber-600' : 'text-gray-400'}`}>
+                                  норма: {norm}
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </div>
           )}
