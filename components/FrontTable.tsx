@@ -3,6 +3,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import FactImport from './FactImport';
 
 interface Props {
   configId: string;
@@ -106,6 +107,17 @@ export default function FrontTable({ configId, onClose }: Props) {
           {front?.saved && (
             <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded mb-3 text-sm">
               Місяць збережено в HISTORY — дані заблоковані від змін.
+            </div>
+          )}
+
+          {front && !front.saved && (
+            <div className="mb-4">
+              <FactImport
+                configId={configId}
+                managers={front.managers.map((m) => ({ id: m.id, name: m.name }))}
+                metrics={front.metrics.map((m) => ({ metricId: m.metricId, name: m.name }))}
+                onImported={load}
+              />
             </div>
           )}
 
