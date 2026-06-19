@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
   const periodParam = searchParams.get('period');
   const quarterParam = searchParams.get('quarter');
 
-  // Доступні періоди для фільтра
+  // Доступні періоди для фільтра (без архівних конфігурацій)
   const distinct = await prisma.historyRecord.findMany({
+    where: { configuration: { status: { not: 'ARCHIVED' } } },
     select: { period: true },
     distinct: ['period'],
     orderBy: { period: 'desc' },
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   const records = await prisma.historyRecord.findMany({
-    where: { period: { in: periods } },
+    where: { period: { in: periods }, configuration: { status: { not: 'ARCHIVED' } } },
     include: {
       manager: { select: { name: true, grade: true } },
       configuration: { select: { departmentId: true, bonusParameters: true, department: { select: { name: true } } } },

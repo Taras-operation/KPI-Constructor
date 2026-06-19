@@ -10,7 +10,8 @@ export async function GET() {
   if ('error' in guard) return guard.error;
 
   const records = await prisma.historyRecord.findMany({
-    include: { configuration: { select: { department: { select: { id: true, name: true } } } } },
+    where: { configuration: { status: { not: 'ARCHIVED' } } },
+    include: { configuration: { select: { status: true, department: { select: { id: true, name: true } } } } },
     orderBy: { period: 'asc' },
   });
 
