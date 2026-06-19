@@ -33,6 +33,7 @@ export default function ConfigurationsManager() {
   const [error, setError] = useState('');
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editInitial, setEditInitial] = useState<any | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,20 +92,27 @@ export default function ConfigurationsManager() {
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-900">KPI-конфігурації</h2>
-        <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition">
-          + Конфігурація
-        </button>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-1.5 text-sm text-gray-500 cursor-pointer">
+            <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            Архівні
+          </label>
+          <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition">
+            + Конфігурація
+          </button>
+        </div>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-4 text-sm">{error}</div>}
 
-      {loading ? (
+      {(() => { const visible = rows.filter((c) => showArchived || c.status !== 'ARCHIVED'); return (
+      loading ? (
         <p className="text-gray-500 text-sm">Завантаження...</p>
-      ) : rows.length === 0 ? (
-        <p className="text-gray-500 text-sm">Конфігурацій ще немає.</p>
+      ) : visible.length === 0 ? (
+        <p className="text-gray-500 text-sm">{rows.length ? 'Активних конфігурацій немає.' : 'Конфігурацій ще немає.'}</p>
       ) : (
         <div className="space-y-3">
-          {rows.map((c) => (
+          {visible.map((c) => (
             <div key={c.id} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -147,7 +155,8 @@ export default function ConfigurationsManager() {
             </div>
           ))}
         </div>
-      )}
+      )
+      ); })()}
 
       {wizardOpen && (
         <ConfigurationWizard

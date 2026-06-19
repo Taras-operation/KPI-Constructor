@@ -35,6 +35,7 @@ export default function TeamLeadConfigs() {
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [frontId, setFrontId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,17 +90,24 @@ export default function TeamLeadConfigs() {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Мої конфігурації</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-900">Мої конфігурації</h2>
+        <label className="flex items-center gap-1.5 text-sm text-gray-500 cursor-pointer">
+          <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+          Архівні
+        </label>
+      </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-4 text-sm">{error}</div>}
 
-      {loading ? (
+      {(() => { const visible = rows.filter((c) => showArchived || c.status !== 'ARCHIVED'); return (
+      loading ? (
         <p className="text-gray-500 text-sm">Завантаження...</p>
-      ) : rows.length === 0 ? (
-        <p className="text-gray-500 text-sm">Конфігурацій для вашої команди ще немає.</p>
+      ) : visible.length === 0 ? (
+        <p className="text-gray-500 text-sm">{rows.length ? 'Активних конфігурацій немає.' : 'Конфігурацій для вашої команди ще немає.'}</p>
       ) : (
         <div className="space-y-3">
-          {rows.map((c) => (
+          {visible.map((c) => (
             <div key={c.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -126,7 +134,8 @@ export default function TeamLeadConfigs() {
             </div>
           ))}
         </div>
-      )}
+      )
+      ); })()}
 
       {frontId && <FrontTable configId={frontId} onClose={() => setFrontId(null)} />}
 
