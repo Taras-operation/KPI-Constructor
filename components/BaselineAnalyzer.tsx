@@ -112,6 +112,16 @@ export default function BaselineAnalyzer() {
     setPasteText('');
   }
 
+  function reset() {
+    if (rows.some((r) => r.some((c) => c.trim() !== '')) && !confirm('Очистити всю таблицю?')) return;
+    setHeaders(['period', 'grade', 'FTD']);
+    setRows([['', '', '']]);
+    setResult(null);
+    setError('');
+    setUrl('');
+    setPasteText('');
+  }
+
   function analyze() {
     setError('');
     const filled = rows.filter((r) => r.some((c) => c.trim() !== ''));
@@ -188,6 +198,7 @@ export default function BaselineAnalyzer() {
         <button onClick={addRow} className="text-blue-600 hover:text-blue-800 text-sm">+ рядок</button>
         <button onClick={() => setPasteOpen((v) => !v)} className="text-gray-500 hover:text-gray-800 text-sm">Вставити текстом</button>
         <button onClick={() => setGrid(SAMPLE_HEADERS, SAMPLE_ROWS)} className="text-gray-500 hover:text-gray-800 text-sm">Приклад</button>
+        <button onClick={reset} className="text-gray-500 hover:text-red-600 text-sm">Очистити</button>
         <div className="ml-auto flex items-center gap-2 text-sm">
           <span className="text-gray-500">Місяць для плану:</span>
           <select value={month} onChange={(e) => setMonth(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-gray-900">
