@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ROLE_LABELS, type Role } from '@/lib/roles';
+import NotificationsBell from '@/components/NotificationsBell';
 
 interface Props {
   role: Role;
@@ -38,6 +39,7 @@ export default function DashboardShell({ role, email, name, children }: Props) {
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationsBell />
             <span className="text-sm text-gray-600">{name || email}</span>
             <button
               onClick={handleLogout}
