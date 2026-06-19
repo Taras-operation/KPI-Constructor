@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = await parseBody(request, configurationCreateSchema);
     if ('error' in parsed) return parsed.error;
-    const { departmentId, teamLeadId, period, bonusModel, bonusParameters } = parsed.data;
+    const { departmentId, teamLeadId, period, bonusModel, bonusParameters, allowManagerInput } = parsed.data;
     const input: ConfigInput = {
       metrics: parsed.data.metrics,
       managers: parsed.data.managers,
@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
           teamLeadId,
           period,
           status: 'DRAFT',
+          allowManagerInput: allowManagerInput ?? false,
           bonusModel,
           bonusParameters,
         },

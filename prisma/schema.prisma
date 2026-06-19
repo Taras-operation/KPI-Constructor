@@ -105,6 +105,9 @@ model KPIConfiguration {
   bonusModel        BonusModel
   bonusParameters   Json       // {threshold: 80, maxCoefficient: 1.2, baseBonus: 1000}
   
+  // Чи дозволено менеджерам самостійно вносити факт (Phase 2, F-27)
+  allowManagerInput Boolean    @default(false)
+
   // Коментар від тімліда при погодженні
   teamLeadComment   String?
   

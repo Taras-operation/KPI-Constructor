@@ -79,6 +79,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           ...(body.period && { period: body.period }),
           ...(body.bonusModel && { bonusModel: body.bonusModel }),
           ...(body.bonusParameters && { bonusParameters: body.bonusParameters }),
+          ...(body.allowManagerInput !== undefined && { allowManagerInput: body.allowManagerInput }),
         },
       });
       // Перезаписуємо вкладені дані (каскад видаляє CurrentData разом з менеджерами).

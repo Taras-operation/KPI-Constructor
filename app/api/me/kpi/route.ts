@@ -29,6 +29,7 @@ export async function GET() {
     const { config, results } = bundle;
     const mine = results.filter((r) => managerIds.has(r.id));
     const bp = (config.bonusParameters ?? {}) as any;
+    const savedCount = await prisma.historyRecord.count({ where: { configurationId: configId, period: config.period } });
     for (const m of mine) {
       result.push({
         configId,
@@ -36,6 +37,8 @@ export async function GET() {
         department: config.department.name,
         currency: bp.currency ?? '$',
         bonusModel: config.bonusModel,
+        allowManagerInput: config.allowManagerInput,
+        saved: savedCount > 0,
         manager: m,
       });
     }

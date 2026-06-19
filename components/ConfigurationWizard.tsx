@@ -70,6 +70,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
 
   // Крок 5: бонусна модель
   const bp = initial?.bonusParameters ?? {};
+  const [allowManagerInput, setAllowManagerInput] = useState<boolean>(initial?.allowManagerInput ?? false);
   const [bonusModel, setBonusModel] = useState<BonusModel>(initial?.bonusModel ?? 'LINEAR');
   const [baseBonus, setBaseBonus] = useState<string>(bp.baseBonus != null ? String(bp.baseBonus) : '');
   const [currency, setCurrency] = useState<string>(bp.currency ?? '$');
@@ -154,6 +155,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
       period,
       bonusModel,
       bonusParameters,
+      allowManagerInput,
       metrics: selectedMetricIds.map((id) => ({ metricId: id, weight: parseFloat(weights[id]) || 0 })),
       managers: managers.map((m) => ({ name: m.name.trim(), grade: m.grade, userId: m.userId || null })),
       plans,
@@ -286,6 +288,11 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                 </div>
               ))}
               <button onClick={addManager} className="text-blue-600 hover:text-blue-800 text-sm mt-2">+ Додати менеджера</button>
+
+              <label className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={allowManagerInput} onChange={(e) => setAllowManagerInput(e.target.checked)} />
+                Дозволити менеджерам самостійно вносити факт (по своїх рядках)
+              </label>
             </div>
           )}
 
