@@ -7,6 +7,7 @@ import MetricsManager from './MetricsManager';
 import DepartmentsManager from './DepartmentsManager';
 import UsersManager from './UsersManager';
 import LeadershipDashboard from './LeadershipDashboard';
+import LeadershipTrends from './LeadershipTrends';
 
 type Section = 'dashboard' | 'configurations' | 'metrics' | 'departments' | 'users';
 
@@ -43,7 +44,12 @@ export default function OperationsWorkspace() {
       </aside>
 
       <div className="flex-1 min-w-0">
-        {section === 'dashboard' && <LeadershipDashboard />}
+        {section === 'dashboard' && (
+          <div className="space-y-6">
+            <LeadershipDashboard />
+            <LeadershipTrends />
+          </div>
+        )}
         {section === 'configurations' && <ConfigurationsManager />}
         {section === 'metrics' && <MetricsManager />}
         {section === 'departments' && <DepartmentsManager />}
