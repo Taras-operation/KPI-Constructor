@@ -12,14 +12,7 @@ export default async function TeamLeadPage() {
     <DashboardShell role="TEAM_LEAD" email={user.email} name={user.name}>
       <h1 className="text-2xl font-bold text-white mb-6">Робоче місце тімліда</h1>
 
-      <div className="space-y-6">
-        <TeamLeadConfigs />
-
-        <div className="bg-white/10 border border-white/15 rounded-lg p-6 text-white/70 text-sm">
-          Далі тут з&apos;явиться FRONT з результатами команди, внесення факту
-          та збереження місяця в HISTORY.
-        </div>
-      </div>
+      <TeamLeadConfigs />
     </DashboardShell>
   );
 }

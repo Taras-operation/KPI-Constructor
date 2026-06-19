@@ -2,6 +2,8 @@
 // Read-only перегляд конфігурації: метрики+ваги, менеджери, матриця планів, бонусна модель.
 'use client';
 
+import { metricLabel } from '@/lib/format';
+
 interface Props {
   config: any;
 }
@@ -74,7 +76,7 @@ export default function ConfigurationView({ config }: Props) {
                 <th className="py-1.5 pr-4 font-medium">Грейд</th>
                 {metrics.map((cm: any) => (
                   <th key={cm.id} className="py-1.5 px-2 font-medium whitespace-nowrap">
-                    {cm.metric?.name}{cm.metric?.unit ? `, ${cm.metric.unit}` : ''}
+                    {metricLabel(cm.metric?.name, cm.metric?.unit)}
                   </th>
                 ))}
               </tr>

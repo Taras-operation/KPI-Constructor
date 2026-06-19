@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import FactImport from './FactImport';
+import { metricLabel } from '@/lib/format';
 
 interface Props {
   configId: string;
@@ -92,7 +93,7 @@ export default function FrontTable({ configId, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-[96vw] max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">FRONT — поточний місяць</h3>
@@ -130,7 +131,7 @@ export default function FrontTable({ configId, onClose }: Props) {
                   <th className="py-2 pr-3 font-medium sticky left-0 bg-white">Менеджер</th>
                   {front.metrics.map((mt) => (
                     <th key={mt.metricId} className="py-2 px-2 font-medium whitespace-nowrap text-center">
-                      {mt.name}{mt.unit ? `, ${mt.unit}` : ''}<br /><span className="text-xs text-gray-400">вага {mt.weight}%</span>
+                      {metricLabel(mt.name, mt.unit)}<br /><span className="text-xs text-gray-400">вага {mt.weight}%</span>
                     </th>
                   ))}
                   <th className="py-2 px-2 font-medium text-center">% KPI</th>

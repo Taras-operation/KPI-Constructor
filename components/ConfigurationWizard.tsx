@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { metricLabel } from '@/lib/format';
 
 type Grade = 'JUNIOR' | 'MIDDLE' | 'SENIOR';
 type BonusModel = 'LINEAR' | 'THRESHOLD' | 'MATRIX';
@@ -324,7 +325,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                     <tr className="text-left text-gray-500">
                       <th className="py-2 pr-4 font-medium">Менеджер</th>
                       {selectedMetrics.map((m) => (
-                        <th key={m.id} className="py-2 px-2 font-medium whitespace-nowrap">{m.name}{m.unit ? `, ${m.unit}` : ''}</th>
+                        <th key={m.id} className="py-2 px-2 font-medium whitespace-nowrap">{metricLabel(m.name, m.unit)}</th>
                       ))}
                     </tr>
                   </thead>

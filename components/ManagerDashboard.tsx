@@ -2,6 +2,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { metricLabel } from '@/lib/format';
 
 interface MetricResult {
   metricId: string; name: string; unit: string | null; weight: number;
@@ -119,7 +120,7 @@ export default function ManagerDashboard() {
                 <tbody className="divide-y divide-gray-100">
                   {c.manager.metrics.map((m) => (
                     <tr key={m.metricId}>
-                      <td className="py-1.5 pr-4 text-gray-900">{m.name}{m.unit ? `, ${m.unit}` : ''}</td>
+                      <td className="py-1.5 pr-4 text-gray-900">{metricLabel(m.name, m.unit)}</td>
                       <td className="py-1.5 px-2 text-right text-gray-700">{m.plan ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">
                         {editable ? (
