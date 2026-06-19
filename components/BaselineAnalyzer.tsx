@@ -25,6 +25,40 @@ export default function BaselineAnalyzer() {
   const [result, setResult] = useState<BaselineResult | null>(null);
   const [month, setMonth] = useState('');
   const [error, setError] = useState('');
+  const [url, setUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    try {
+      const content = await file.text();
+      setText(content);
+    } catch {
+      setError('Не вдалося прочитати файл.');
+    }
+  }
+
+  async function importSheet() {
+    if (!url.trim()) return;
+    setImporting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/baseline/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Помилка імпорту');
+      setText(data.text);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
 
   function analyze() {
     setError('');
@@ -49,6 +83,25 @@ export default function BaselineAnalyzer() {
         <code className="bg-gray-100 px-1 rounded">grade</code> та метриками. Інструмент рахує медіани по грейдах,
         стабільність, сезональність і рекомендовані плани.
       </p>
+
+      {/* Джерела даних: файл або Google-таблиця */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-3">
+        <label className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 cursor-pointer hover:border-blue-400 shrink-0">
+          📄 Завантажити CSV
+          <input type="file" accept=".csv,text/csv" onChange={handleFile} className="hidden" />
+        </label>
+        <div className="flex-1 flex gap-2">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Посилання на Google-таблицю (доступ «за посиланням»)"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button onClick={importSheet} disabled={importing} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-blue-400 disabled:opacity-50 whitespace-nowrap">
+            {importing ? 'Завантаження...' : 'Імпорт'}
+          </button>
+        </div>
+      </div>
 
       <textarea
         value={text}
