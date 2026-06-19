@@ -161,16 +161,7 @@ export default function ManagerDashboard() {
           <button onClick={() => setShowHistory((v) => !v)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
             {showHistory ? '▾' : '▸'} Моя історія ({history.length})
           </button>
-          {showHistory && (
-            <div className="mt-3 space-y-2">
-              {history.map((h) => (
-                <div key={h.id} className="flex items-center justify-between border-b border-gray-100 py-2 text-sm">
-                  <span className="text-gray-700">{h.configuration.department.name} · {fmtPeriod(h.period)}</span>
-                  <span className="text-gray-900 font-medium">{h.kpiPercentage}% · {h.bonusAmount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {showHistory && <HistoryTrend history={history} />}
         </Card>
       )}
     </div>
@@ -179,4 +170,47 @@ export default function ManagerDashboard() {
 
 function Card({ children }: { children: React.ReactNode }) {
   return <div className="bg-white rounded-lg shadow p-6">{children}</div>;
+}
+
+function HistoryTrend({ history }: { history: HistoryRec[] }) {
+  // Хронологічно (від старих до нових)
+  const items = [...history].sort((a, b) => a.period.localeCompare(b.period));
+  const maxBonus = Math.max(...items.map((h) => h.bonusAmount), 1);
+  const avgKpi = items.length ? Math.round((items.reduce((s, h) => s + h.kpiPercentage, 0) / items.length) * 100) / 100 : 0;
+  const totalBonus = items.reduce((s, h) => s + h.bonusAmount, 0);
+
+  return (
+    <div className="mt-4">
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <Mini label="Періодів" value={String(items.length)} />
+        <Mini label="Середній % KPI" value={`${avgKpi}%`} />
+        <Mini label="Сума бонусів" value={totalBonus.toFixed(2)} />
+      </div>
+      <div className="space-y-1.5">
+        {items.map((h) => (
+          <div key={h.id} className="flex items-center gap-3 text-sm">
+            <span className="w-14 text-gray-500 shrink-0">{fmtPeriod(h.period)}</span>
+            <div className="flex-1 bg-gray-100 rounded h-5 relative">
+              <div className={`h-5 rounded ${h.kpiPercentage >= 100 ? 'bg-green-500' : h.kpiPercentage >= 70 ? 'bg-blue-500' : 'bg-amber-500'}`}
+                style={{ width: `${Math.min(h.kpiPercentage, 120) / 1.2}%` }} />
+              <span className="absolute inset-y-0 left-2 flex items-center text-xs text-gray-700 font-medium">{h.kpiPercentage}%</span>
+            </div>
+            <span className="w-24 text-right text-gray-700 shrink-0">{h.bonusAmount.toFixed(2)}</span>
+            <div className="w-20 bg-gray-100 rounded h-2 shrink-0">
+              <div className="bg-green-400 h-2 rounded" style={{ width: `${(h.bonusAmount / maxBonus) * 100}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-3">
+      <p className="text-xs text-gray-400">{label}</p>
+      <p className="text-lg font-bold text-gray-900">{value}</p>
+    </div>
+  );
 }
