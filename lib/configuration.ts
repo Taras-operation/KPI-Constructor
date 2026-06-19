@@ -55,6 +55,17 @@ export function validateConfigInput(input: ConfigInput, requiredMetricIds: strin
     return 'У кожного менеджера має бути ім\'я';
   }
 
+  // Розд. 9: не дозволяємо порожні планові значення для активних менеджерів.
+  for (let idx = 0; idx < input.managers.length; idx++) {
+    const mgrPlans = input.plans?.[idx] ?? {};
+    for (const metric of input.metrics) {
+      const v = mgrPlans[metric.metricId];
+      if (v === undefined || v === null || String(v).trim() === '') {
+        return `Заповніть планові значення для всіх менеджерів і метрик (немає плану: ${input.managers[idx].name})`;
+      }
+    }
+  }
+
   return null;
 }
 
