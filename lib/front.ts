@@ -20,6 +20,7 @@ export interface FrontManagerInput {
   id: string;
   name: string;
   grade: string;
+  baseBonus: number;
 }
 
 // data[managerId][metricId] = { plan, fact }
@@ -40,6 +41,7 @@ export interface FrontManagerResult {
   id: string;
   name: string;
   grade: string;
+  baseBonus: number;
   metrics: FrontMetricResult[];
   kpiPercentage: number;
   bonusAmount: number;
@@ -50,7 +52,7 @@ export function computeFront(
   managers: FrontManagerInput[],
   data: FrontDataMap,
   bonusModel: BonusModel,
-  bonusParameters: { baseBonus: number; threshold?: number; maxCoefficient?: number }
+  bonusParameters: { threshold?: number; maxCoefficient?: number }
 ): FrontManagerResult[] {
   return managers.map((mgr) => {
     const cells = data[mgr.id] ?? {};
@@ -85,12 +87,13 @@ export function computeFront(
       }));
 
     const kpiPercentage = kpiInput.length > 0 ? calculateManagerKPI(kpiInput) : 0;
-    const bonusAmount = calculateBonus(kpiPercentage, bonusModel, bonusParameters);
+    const bonusAmount = calculateBonus(kpiPercentage, bonusModel, { baseBonus: mgr.baseBonus, ...bonusParameters });
 
     return {
       id: mgr.id,
       name: mgr.name,
       grade: mgr.grade,
+      baseBonus: mgr.baseBonus,
       metrics: metricResults,
       kpiPercentage,
       bonusAmount,

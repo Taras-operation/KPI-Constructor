@@ -12,6 +12,7 @@ export interface ConfigMetricInput {
 export interface ConfigManagerInput {
   name: string;
   grade: ManagerGrade;
+  baseBonus: number; // базовий бонус менеджера (D4)
   userId?: string | null; // опційна прив'язка до акаунта менеджера
 }
 
@@ -54,6 +55,9 @@ export function validateConfigInput(input: ConfigInput, requiredMetricIds: strin
   if (input.managers.some((m) => !m.name || !m.name.trim())) {
     return 'У кожного менеджера має бути ім\'я';
   }
+  if (input.managers.some((m) => m.baseBonus == null || Number.isNaN(Number(m.baseBonus)) || Number(m.baseBonus) < 0)) {
+    return 'Вкажіть базовий бонус (>= 0) для кожного менеджера';
+  }
 
   // Розд. 9: не дозволяємо порожні планові значення для активних менеджерів.
   for (let idx = 0; idx < input.managers.length; idx++) {
@@ -91,7 +95,13 @@ export async function writeConfigChildren(
   for (let idx = 0; idx < input.managers.length; idx++) {
     const mgr = input.managers[idx];
     const created = await tx.teamManager.create({
-      data: { configurationId, name: mgr.name.trim(), grade: mgr.grade, userId: mgr.userId || null },
+      data: {
+        configurationId,
+        name: mgr.name.trim(),
+        grade: mgr.grade,
+        baseBonus: new Prisma.Decimal(mgr.baseBonus ?? 0),
+        userId: mgr.userId || null,
+      },
     });
 
     const mgrPlans = input.plans?.[idx];

@@ -74,6 +74,7 @@ export default function ConfigurationView({ config }: Props) {
               <tr className="text-left text-gray-500">
                 <th className="py-1.5 pr-4 font-medium">Менеджер</th>
                 <th className="py-1.5 pr-4 font-medium">Грейд</th>
+                <th className="py-1.5 pr-4 font-medium whitespace-nowrap">Баз. бонус</th>
                 {metrics.map((cm: any) => (
                   <th key={cm.id} className="py-1.5 px-2 font-medium whitespace-nowrap">
                     {metricLabel(cm.metric?.name, cm.metric?.unit)}
@@ -86,6 +87,7 @@ export default function ConfigurationView({ config }: Props) {
                 <tr key={mgr.id} className="border-t border-gray-100">
                   <td className="py-1.5 pr-4 text-gray-900 whitespace-nowrap">{mgr.name}</td>
                   <td className="py-1.5 pr-4 text-gray-500">{GRADE_LABELS[mgr.grade] ?? mgr.grade}</td>
+                  <td className="py-1.5 pr-4 text-gray-700 whitespace-nowrap">{bp.currency ?? '$'} {Number(mgr.baseBonus ?? 0)}</td>
                   {metrics.map((cm: any) => (
                     <td key={cm.id} className="py-1.5 px-2 text-gray-700">
                       {planMap[mgr.id]?.[cm.metric.id] ?? '—'}
@@ -101,7 +103,7 @@ export default function ConfigurationView({ config }: Props) {
       {/* Бонусна модель */}
       <div className="text-sm text-gray-700">
         <h4 className="font-medium text-gray-900 mb-2">Параметри бонусу</h4>
-        <p>Базовий бонус: {bp.currency ?? '$'} {bp.baseBonus}</p>
+        <p className="text-gray-500">Базовий бонус задається індивідуально для кожного менеджера (див. колонку «Баз. бонус»).</p>
         {config.bonusModel === 'THRESHOLD' && (
           <p>Поріг: {bp.threshold}% · Макс. коефіцієнт: {bp.maxCoefficient}</p>
         )}

@@ -170,7 +170,8 @@ model TeamManager {
   
   name              String
   grade             ManagerGrade
-  
+  baseBonus         Decimal    @default(0) @db.Decimal(10, 2) // базовий бонус менеджера (D4)
+
   // Relations
   currentData       CurrentData[]
   historyRecords    HistoryRecord[]

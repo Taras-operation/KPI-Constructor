@@ -90,9 +90,14 @@ export const metricUpdateSchema = z.object({
 
 // ---- Configurations ----
 const configMetric = z.object({ metricId: z.string().min(1), weight: z.coerce.number().min(0) });
-const configManager = z.object({ name: z.string().min(1), grade, userId: z.string().nullish() });
+const configManager = z.object({
+  name: z.string().min(1),
+  grade,
+  baseBonus: z.coerce.number().min(0),
+  userId: z.string().nullish(),
+});
 const bonusParameters = z.object({
-  baseBonus: z.number(),
+  baseBonus: z.number().optional(), // D4: базовий бонус тепер на рівні менеджера
   currency: z.string().optional(),
   threshold: z.number().optional(),
   maxCoefficient: z.number().optional(),

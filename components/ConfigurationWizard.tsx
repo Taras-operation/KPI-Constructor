@@ -50,9 +50,10 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     return w;
   });
 
-  // Крок 3: менеджери
-  const [managers, setManagers] = useState<{ name: string; grade: Grade; userId: string }[]>(
-    initial?.managers?.map((m: any) => ({ name: m.name, grade: m.grade, userId: m.userId ?? '' })) ?? [{ name: '', grade: 'MIDDLE', userId: '' }]
+  // Крок 3: менеджери (з базовим бонусом — D4)
+  const [managers, setManagers] = useState<{ name: string; grade: Grade; userId: string; baseBonus: string }[]>(
+    initial?.managers?.map((m: any) => ({ name: m.name, grade: m.grade, userId: m.userId ?? '', baseBonus: m.baseBonus != null ? String(m.baseBonus) : '' }))
+      ?? [{ name: '', grade: 'MIDDLE', userId: '', baseBonus: '' }]
   );
 
   // Крок 4: плани plans[mgrIndex][metricId]
@@ -74,7 +75,6 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
   const bp = initial?.bonusParameters ?? {};
   const [allowManagerInput, setAllowManagerInput] = useState<boolean>(initial?.allowManagerInput ?? false);
   const [bonusModel, setBonusModel] = useState<BonusModel>(initial?.bonusModel ?? 'LINEAR');
-  const [baseBonus, setBaseBonus] = useState<string>(bp.baseBonus != null ? String(bp.baseBonus) : '');
   const [currency, setCurrency] = useState<string>(bp.currency ?? '$');
   const [threshold, setThreshold] = useState<string>(bp.threshold != null ? String(bp.threshold) : '80');
   const [maxCoefficient, setMaxCoefficient] = useState<string>(bp.maxCoefficient != null ? String(bp.maxCoefficient) : '1.2');
@@ -124,11 +124,11 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     });
   }
 
-  function setManager(i: number, patch: Partial<{ name: string; grade: Grade; userId: string }>) {
+  function setManager(i: number, patch: Partial<{ name: string; grade: Grade; userId: string; baseBonus: string }>) {
     setManagers((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   }
   function addManager() {
-    setManagers((prev) => [...prev, { name: '', grade: 'MIDDLE', userId: '' }]);
+    setManagers((prev) => [...prev, { name: '', grade: 'MIDDLE', userId: '', baseBonus: '' }]);
   }
   function removeManager(i: number) {
     setManagers((prev) => prev.filter((_, idx) => idx !== i));
@@ -151,10 +151,12 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     if (selectedMetricIds.length === 0) { setError('Оберіть хоча б одну метрику'); setStep(2); return; }
     if (Math.abs(weightSum - 100) > 0.01) { setError('Сума ваг має дорівнювати 100%'); setStep(2); return; }
     if (managers.length === 0 || managers.some((m) => !m.name.trim())) { setError('Додайте менеджерів з іменами'); setStep(3); return; }
-    if (!baseBonus || isNaN(parseFloat(baseBonus))) { setError('Вкажіть базовий бонус'); setStep(5); return; }
+    if (managers.some((m) => m.baseBonus === '' || isNaN(parseFloat(m.baseBonus)) || parseFloat(m.baseBonus) < 0)) {
+      setError('Вкажіть базовий бонус (>= 0) для кожного менеджера'); setStep(3); return;
+    }
 
     const period = monthInput.replace('-', '');
-    const bonusParameters: any = { baseBonus: parseFloat(baseBonus), currency };
+    const bonusParameters: any = { currency };
     if (bonusModel === 'THRESHOLD') {
       bonusParameters.threshold = parseFloat(threshold);
       bonusParameters.maxCoefficient = parseFloat(maxCoefficient);
@@ -168,7 +170,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
       bonusParameters,
       allowManagerInput,
       metrics: selectedMetricIds.map((id) => ({ metricId: id, weight: parseFloat(weights[id]) || 0 })),
-      managers: managers.map((m) => ({ name: m.name.trim(), grade: m.grade, userId: m.userId || null })),
+      managers: managers.map((m) => ({ name: m.name.trim(), grade: m.grade, userId: m.userId || null, baseBonus: parseFloat(m.baseBonus) })),
       plans,
     };
 
@@ -286,6 +288,14 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                   <select value={m.grade} onChange={(e) => setManager(i, { grade: e.target.value as Grade })} className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900">
                     {GRADES.map((g) => <option key={g} value={g}>{GRADE_LABELS[g]}</option>)}
                   </select>
+                  <input
+                    type="number" step="any" min="0"
+                    value={m.baseBonus}
+                    onChange={(e) => setManager(i, { baseBonus: e.target.value })}
+                    placeholder="базовий бонус"
+                    title="Базовий бонус менеджера"
+                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  />
                   <select
                     value={m.userId}
                     onChange={(e) => setManager(i, { userId: e.target.value })}
@@ -377,17 +387,13 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                   <option value="MATRIX">Матриця</option>
                 </select>
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Базовий бонус *">
-                  <input type="number" step="any" value={baseBonus} onChange={(e) => setBaseBonus(e.target.value)} className={selCls} />
-                </Field>
-                <Field label="Валюта">
-                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={selCls}>
-                    <option value="$">$</option>
-                    <option value="€">€</option>
-                  </select>
-                </Field>
-              </div>
+              <Field label="Валюта">
+                <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={selCls}>
+                  <option value="$">$</option>
+                  <option value="€">€</option>
+                </select>
+              </Field>
+              <p className="text-xs text-gray-500">Базовий бонус задається окремо для кожного менеджера на кроці «Менеджери».</p>
               {bonusModel === 'THRESHOLD' && (
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Поріг, %">

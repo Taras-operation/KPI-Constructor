@@ -44,6 +44,7 @@ export async function buildFront(id: string): Promise<FrontBundle | null> {
     id: m.id,
     name: m.name,
     grade: m.grade,
+    baseBonus: Number(m.baseBonus),
   }));
 
   const data: FrontDataMap = {};
@@ -57,7 +58,6 @@ export async function buildFront(id: string): Promise<FrontBundle | null> {
 
   const bp = (config.bonusParameters ?? {}) as any;
   const results = computeFront(metrics, managers, data, config.bonusModel, {
-    baseBonus: Number(bp.baseBonus ?? 0),
     threshold: bp.threshold != null ? Number(bp.threshold) : undefined,
     maxCoefficient: bp.maxCoefficient != null ? Number(bp.maxCoefficient) : undefined,
   });
