@@ -7,6 +7,7 @@ import { requireRole } from '@/lib/api-auth';
 import { serialize } from '@/lib/serialize';
 import { logAudit } from '@/lib/audit';
 import { parseBody, statusSchema } from '@/lib/validation';
+import { notifyUser, notifyOperations } from '@/lib/telegram';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireRole(['OPERATIONS', 'TEAM_LEAD']);
@@ -75,6 +76,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     oldValues: { status: config.status },
     newValues: { action, status: updated.status, comment: comment ?? undefined },
   });
+
+  // Telegram-нотифікації (Q-11), best-effort
+  if (action === 'SEND_FOR_APPROVAL') {
+    notifyUser(config.teamLeadId, '📋 Вам надіслано KPI-конфігурацію на погодження.');
+  } else if (action === 'APPROVE') {
+    notifyOperations('✅ Тімлід погодив конфігурацію — готова до активації.');
+  } else if (action === 'REQUEST_CORRECTION') {
+    notifyOperations(`✏️ Тімлід повернув конфігурацію на коригування${comment ? `: ${comment}` : ''}.`);
+  }
 
   return NextResponse.json(serialize(updated));
 }

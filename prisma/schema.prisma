@@ -16,6 +16,7 @@ model User {
   passwordHash  String
   name          String?
   role          UserRole
+  telegramChatId String?   // для Telegram-нотифікацій (Q-11)
   departmentId  String?
   department    Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
   

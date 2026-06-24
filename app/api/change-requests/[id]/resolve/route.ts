@@ -8,6 +8,7 @@ import { serialize } from '@/lib/serialize';
 import { parseBody, resolveSchema } from '@/lib/validation';
 import { applyConfigPayload } from '@/lib/apply-config';
 import { logAudit } from '@/lib/audit';
+import { notifyUser } from '@/lib/telegram';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireRole(['OPERATIONS']);
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data: { status: 'REJECTED', resolvedById: guard.user.userId, resolvedAt: new Date() },
     });
     await logAudit({ userId: guard.user.userId, action: 'UPDATE', tableName: 'ConfigChangeRequest', recordId: id, newValues: { status: 'REJECTED' } });
+    notifyUser(cr.requestedById, '❌ Ваш запит на зміну конфігурації відхилено Operations.');
     return NextResponse.json(serialize(updated));
   }
 
@@ -45,6 +47,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   await logAudit({ userId: guard.user.userId, action: 'APPROVE', tableName: 'ConfigChangeRequest', recordId: id, newValues: { configurationId: cr.configurationId } });
+  notifyUser(cr.requestedById, '✅ Ваш запит на зміну конфігурації схвалено й застосовано.');
 
   const updated = await prisma.configChangeRequest.findUnique({ where: { id } });
   return NextResponse.json(serialize(updated));

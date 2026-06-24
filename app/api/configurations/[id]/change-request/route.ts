@@ -9,6 +9,7 @@ import { parseBody, changeRequestSchema } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 import { isCriticalChange } from '@/lib/change-classify';
 import { applyConfigPayload } from '@/lib/apply-config';
+import { notifyOperations } from '@/lib/telegram';
 
 // GET — список запитів на зміну для конфігурації (OPERATIONS або власник-тімлід).
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     });
     await logAudit({ userId: guard.user.userId, action: 'UPDATE', tableName: 'KPIConfiguration', recordId: id, newValues: { nonCriticalChange: true } });
+    notifyOperations('ℹ️ Тімлід вніс некритичну зміну в активну конфігурацію (застосовано автоматично).');
     return NextResponse.json(serialize({ ...cr, applied: true }), { status: 200 });
   }
 
@@ -96,6 +98,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   await logAudit({ userId: guard.user.userId, action: 'CREATE', tableName: 'ConfigChangeRequest', recordId: cr.id, newValues: { configurationId: id } });
+  notifyOperations('⇄ Тімлід надіслав запит на зміну конфігурації — потрібен ваш аппрув.');
 
   return NextResponse.json(serialize(cr), { status: 201 });
 }
