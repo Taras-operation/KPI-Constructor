@@ -139,6 +139,14 @@ export const configurationUpdateSchema = z.object({
 });
 
 // ---- DATA / status ----
+export const changeRequestSchema = configurationUpdateSchema.extend({
+  summary: z.string().optional(),
+});
+
+export const resolveSchema = z.object({
+  action: z.enum(['APPROVE', 'REJECT']),
+});
+
 export const dataSchema = z.object({
   entries: z.array(
     z.object({

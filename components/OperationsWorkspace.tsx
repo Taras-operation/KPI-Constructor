@@ -9,12 +9,14 @@ import UsersManager from './UsersManager';
 import LeadershipDashboard from './LeadershipDashboard';
 import LeadershipTrends from './LeadershipTrends';
 import BaselineAnalyzer from './BaselineAnalyzer';
+import ChangeRequestsManager from './ChangeRequestsManager';
 
-type Section = 'dashboard' | 'configurations' | 'metrics' | 'baseline' | 'departments' | 'users';
+type Section = 'dashboard' | 'configurations' | 'requests' | 'metrics' | 'baseline' | 'departments' | 'users';
 
 const MENU: { key: Section; label: string; icon: string }[] = [
   { key: 'dashboard', label: 'Дашборд', icon: '▣' },
   { key: 'configurations', label: 'KPI-конфігурації', icon: '◆' },
+  { key: 'requests', label: 'Запити на зміну', icon: '⇄' },
   { key: 'metrics', label: 'Банк метрик', icon: '≣' },
   { key: 'baseline', label: 'Baseline Analyzer', icon: '∿' },
   { key: 'departments', label: 'Відділи', icon: '◧' },
@@ -53,6 +55,7 @@ export default function OperationsWorkspace() {
           </div>
         )}
         {section === 'configurations' && <ConfigurationsManager />}
+        {section === 'requests' && <ChangeRequestsManager />}
         {section === 'metrics' && <MetricsManager />}
         {section === 'baseline' && <BaselineAnalyzer />}
         {section === 'departments' && <DepartmentsManager />}

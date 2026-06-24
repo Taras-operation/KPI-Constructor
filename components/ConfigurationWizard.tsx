@@ -21,6 +21,7 @@ interface Metric {
 interface Props {
   initial?: any | null; // повна конфігурація для редагування
   onClose: (saved: boolean) => void;
+  propose?: boolean; // D7: режим пропозиції змін тімлідом (на аппрув Operations)
 }
 
 const GRADES: Grade[] = ['JUNIOR', 'MIDDLE', 'SENIOR'];
@@ -30,7 +31,7 @@ function periodToMonthInput(period: string): string {
   return period && period.length === 6 ? `${period.slice(0, 4)}-${period.slice(4)}` : '';
 }
 
-export default function ConfigurationWizard({ initial, onClose }: Props) {
+export default function ConfigurationWizard({ initial, onClose, propose = false }: Props) {
   const editing = !!initial;
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
@@ -294,11 +295,14 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
 
     setSaving(true);
     try {
-      const url = editing ? `/api/configurations/${initial.id}` : '/api/configurations';
+      const url = propose
+        ? `/api/configurations/${initial.id}/change-request`
+        : editing ? `/api/configurations/${initial.id}` : '/api/configurations';
+      const method = propose ? 'POST' : editing ? 'PUT' : 'POST';
       const res = await fetch(url, {
-        method: editing ? 'PUT' : 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(propose ? { ...body, summary: 'Зміни конфігурації від тімліда' } : body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Помилка збереження');
@@ -317,7 +321,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[92vh] flex flex-col">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
-            {editing ? 'Редагування конфігурації' : 'Нова KPI-конфігурація'}
+            {propose ? 'Пропозиція змін (на погодження Operations)' : editing ? 'Редагування конфігурації' : 'Нова KPI-конфігурація'}
           </h3>
           <div className="flex gap-2 mt-3 text-xs">
             {stepTitles.map((t, i) => (
@@ -612,7 +616,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
             {step < 6 && <button onClick={() => setStep(step + 1)} className="px-4 py-2 bg-gray-800 text-white rounded-lg">Далі</button>}
             {step === 6 && (
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg">
-                {saving ? 'Збереження...' : 'Зберегти чернетку'}
+                {saving ? 'Збереження...' : propose ? 'Надіслати на погодження' : 'Зберегти чернетку'}
               </button>
             )}
           </div>

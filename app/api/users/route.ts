@@ -8,9 +8,9 @@ import { hashPassword } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { parseBody, userCreateSchema } from '@/lib/validation';
 
-// GET — список користувачів з опційним фільтром по ролі / відділу. Тільки OPERATIONS.
+// GET — список користувачів з опційним фільтром по ролі / відділу (OPERATIONS, TEAM_LEAD для конструктора).
 export async function GET(request: NextRequest) {
-  const guard = await requireRole(['OPERATIONS']);
+  const guard = await requireRole(['OPERATIONS', 'TEAM_LEAD']);
   if ('error' in guard) return guard.error;
 
   const { searchParams } = new URL(request.url);

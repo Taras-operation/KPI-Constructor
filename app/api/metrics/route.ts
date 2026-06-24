@@ -11,7 +11,7 @@ import { parseBody, metricCreateSchema } from '@/lib/validation';
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'OPERATIONS') {
+    if (!user || (user.role !== 'OPERATIONS' && user.role !== 'TEAM_LEAD')) {
       return NextResponse.json(
         { error: 'Доступ заборонений' },
         { status: 403 }

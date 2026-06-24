@@ -68,6 +68,9 @@ export async function GET() {
 
     const correction = await prisma.kPIConfiguration.count({ where: { status: 'ON_CORRECTION' } });
     if (correction > 0) notes.push({ level: 'warn', text: `${correction} конфігурацій повернено на коригування`, link: '/operations' });
+
+    const changeReqs = await prisma.configChangeRequest.count({ where: { status: 'PENDING' } });
+    if (changeReqs > 0) notes.push({ level: 'warn', text: `${changeReqs} запитів на зміну від тімлідів`, link: '/operations' });
   }
 
   if (role === 'MANAGER') {

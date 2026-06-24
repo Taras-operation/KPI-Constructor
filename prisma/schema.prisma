@@ -23,6 +23,7 @@ model User {
   createdConfigurations KPIConfiguration[] @relation("CreatedBy")
   approvedConfigurations KPIConfiguration[] @relation("ApprovedBy")
   managerProfiles TeamManager[] @relation("ManagerUser")
+  changeRequests ConfigChangeRequest[] @relation("ChangeRequestedBy")
   
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -124,14 +125,40 @@ model KPIConfiguration {
   managers          TeamManager[]
   currentData       CurrentData[]
   history           HistoryRecord[]
-  
+  changeRequests    ConfigChangeRequest[]
+
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
   approvedAt        DateTime?
-  
+
   @@unique([departmentId, period])
   @@index([status])
   @@index([period])
+}
+
+// Запит тімліда на зміну конфігурації (D7) — потребує аппруву Operations
+model ConfigChangeRequest {
+  id                String     @id @default(cuid())
+  configurationId   String
+  configuration     KPIConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  requestedById     String
+  requestedBy       User       @relation("ChangeRequestedBy", fields: [requestedById], references: [id])
+  summary           String     // короткий опис змін
+  payload           Json       // запропонована конфігурація (формат конструктора)
+  critical          Boolean    @default(true) // критичні зміни вимагають аппруву (D6)
+  status            ChangeRequestStatus @default(PENDING)
+  resolvedById      String?
+  resolvedAt        DateTime?
+  createdAt         DateTime   @default(now())
+
+  @@index([configurationId])
+  @@index([status])
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum ConfigurationStatus {

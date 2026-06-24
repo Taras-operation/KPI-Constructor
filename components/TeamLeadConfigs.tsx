@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import ConfigurationView from './ConfigurationView';
 import FrontTable from './FrontTable';
+import ConfigurationWizard from './ConfigurationWizard';
 
 interface ConfigRow {
   id: string;
@@ -36,6 +37,16 @@ export default function TeamLeadConfigs() {
   const [busy, setBusy] = useState(false);
   const [frontId, setFrontId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [proposeInitial, setProposeInitial] = useState<any | null>(null);
+
+  async function openPropose(id: string) {
+    setError('');
+    try {
+      const res = await fetch(`/api/configurations/${id}`);
+      if (!res.ok) throw new Error('Не вдалося завантажити конфігурацію');
+      setProposeInitial(await res.json());
+    } catch (e: any) { setError(e.message); }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -126,9 +137,14 @@ export default function TeamLeadConfigs() {
                   {c.status === 'ON_APPROVAL' ? 'Розглянути' : 'Переглянути'}
                 </button>
                 {c.status === 'ACTIVE' && (
-                  <button onClick={() => setFrontId(c.id)} className="text-green-600 hover:text-green-800 font-medium">
-                    FRONT
-                  </button>
+                  <>
+                    <button onClick={() => setFrontId(c.id)} className="text-green-600 hover:text-green-800 font-medium">
+                      FRONT
+                    </button>
+                    <button onClick={() => openPropose(c.id)} className="text-amber-600 hover:text-amber-800">
+                      Запропонувати зміни
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -138,6 +154,17 @@ export default function TeamLeadConfigs() {
       ); })()}
 
       {frontId && <FrontTable configId={frontId} onClose={() => setFrontId(null)} />}
+
+      {proposeInitial && (
+        <ConfigurationWizard
+          initial={proposeInitial}
+          propose
+          onClose={(saved) => {
+            setProposeInitial(null);
+            if (saved) { setError(''); load(); }
+          }}
+        />
+      )}
 
       {/* Модалка перегляду + погодження */}
       {detail && (
