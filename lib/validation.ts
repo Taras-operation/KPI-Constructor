@@ -33,6 +33,7 @@ export async function parseBody<T>(request: NextRequest, schema: z.ZodSchema<T>)
 const role = z.enum(['OPERATIONS', 'TEAM_LEAD', 'MANAGER', 'LEADERSHIP']);
 const grade = z.enum(['JUNIOR', 'MIDDLE', 'SENIOR']);
 const bonusModel = z.enum(['LINEAR', 'THRESHOLD', 'MATRIX']);
+const periodicity = z.enum(['MONTHLY', 'QUARTERLY', 'SEMIANNUAL']);
 
 // ---- Auth ----
 export const loginSchema = z.object({
@@ -108,6 +109,7 @@ export const configurationCreateSchema = z.object({
   departmentId: z.string().min(1),
   teamLeadId: z.string().min(1),
   period: z.string().regex(/^\d{6}$/, 'формат YYYYMM'),
+  periodicity: periodicity.optional(),
   bonusModel,
   bonusParameters,
   allowManagerInput: z.boolean().optional(),
@@ -120,6 +122,7 @@ export const configurationUpdateSchema = z.object({
   departmentId: z.string().optional(),
   teamLeadId: z.string().optional(),
   period: z.string().regex(/^\d{6}$/).optional(),
+  periodicity: periodicity.optional(),
   bonusModel: bonusModel.optional(),
   bonusParameters: bonusParameters.optional(),
   allowManagerInput: z.boolean().optional(),

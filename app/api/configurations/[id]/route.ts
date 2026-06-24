@@ -77,6 +77,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           departmentId,
           ...(body.teamLeadId && { teamLeadId: body.teamLeadId }),
           ...(body.period && { period: body.period }),
+          ...(body.periodicity && { periodicity: body.periodicity }),
           ...(body.bonusModel && { bonusModel: body.bonusModel }),
           ...(body.bonusParameters && { bonusParameters: body.bonusParameters }),
           ...(body.allowManagerInput !== undefined && { allowManagerInput: body.allowManagerInput }),

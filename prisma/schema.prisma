@@ -99,6 +99,7 @@ model KPIConfiguration {
   teamLead          User       @relation("CreatedBy", fields: [teamLeadId], references: [id])
   
   period            String     // YYYYMM формат, например "202401"
+  periodicity       Periodicity @default(MONTHLY) // ритм роботи (D1, v1.2)
   status            ConfigurationStatus @default(DRAFT)
   
   // Бонусна модель
@@ -136,6 +137,12 @@ enum ConfigurationStatus {
   ACTIVE
   ON_CORRECTION
   ARCHIVED
+}
+
+enum Periodicity {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
 }
 
 enum BonusModel {

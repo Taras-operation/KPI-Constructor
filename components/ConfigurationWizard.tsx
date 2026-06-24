@@ -42,6 +42,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
   const [departmentId, setDepartmentId] = useState(initial?.departmentId ?? '');
   const [teamLeadId, setTeamLeadId] = useState(initial?.teamLeadId ?? '');
   const [monthInput, setMonthInput] = useState(periodToMonthInput(initial?.period ?? ''));
+  const [periodicity, setPeriodicity] = useState<string>(initial?.periodicity ?? 'MONTHLY');
 
   // Крок 2: вибрані метрики -> вага
   const [weights, setWeights] = useState<Record<string, string>>(() => {
@@ -166,6 +167,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
       departmentId,
       teamLeadId,
       period,
+      periodicity,
       bonusModel,
       bonusParameters,
       allowManagerInput,
@@ -234,7 +236,14 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                   {leads.map((l) => <option key={l.id} value={l.id}>{l.name || l.email}</option>)}
                 </select>
               </Field>
-              <Field label="Період *">
+              <Field label="Періодичність *">
+                <select value={periodicity} onChange={(e) => setPeriodicity(e.target.value)} className={selCls}>
+                  <option value="MONTHLY">Щомісячно</option>
+                  <option value="QUARTERLY">Щоквартально</option>
+                  <option value="SEMIANNUAL">Кожні 6 місяців</option>
+                </select>
+              </Field>
+              <Field label="Стартовий період *">
                 <input type="month" value={monthInput} onChange={(e) => setMonthInput(e.target.value)} className={selCls} />
               </Field>
             </div>

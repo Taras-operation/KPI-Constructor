@@ -14,6 +14,7 @@ const BONUS_LABELS: Record<string, string> = {
   MATRIX: 'Матриця',
 };
 const GRADE_LABELS: Record<string, string> = { JUNIOR: 'Junior', MIDDLE: 'Middle', SENIOR: 'Senior' };
+const PERIODICITY_LABELS: Record<string, string> = { MONTHLY: 'Щомісячно', QUARTERLY: 'Щоквартально', SEMIANNUAL: 'Кожні 6 місяців' };
 
 function fmtPeriod(p: string) {
   return p?.length === 6 ? `${p.slice(4)}.${p.slice(0, 4)}` : p;
@@ -33,9 +34,10 @@ export default function ConfigurationView({ config }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
         <Info label="Відділ" value={config.department?.name} />
         <Info label="Період" value={fmtPeriod(config.period)} />
+        <Info label="Періодичність" value={PERIODICITY_LABELS[config.periodicity] ?? config.periodicity} />
         <Info label="Тімлід" value={config.teamLead?.name || config.teamLead?.email} />
         <Info label="Бонусна модель" value={BONUS_LABELS[config.bonusModel] ?? config.bonusModel} />
       </div>
