@@ -49,6 +49,18 @@ describe('analyzeBaseline', () => {
     expect(ftd.cv!).toBeGreaterThan(0);
   });
 
+  it('mean і stdDev рахуються', () => {
+    const ftd = res.metrics.find((m) => m.name === 'FTD')!;
+    expect(ftd.mean).toBe(160); // (100+200+120+220)/4
+    expect(ftd.stdDev).not.toBeNull();
+    expect(ftd.byGrade.JUNIOR.mean).toBe(110);
+  });
+
+  it('тренд up (період 01 avg 150 -> 02 avg 170)', () => {
+    const ftd = res.metrics.find((m) => m.name === 'FTD')!;
+    expect(ftd.trend).toBe('up');
+  });
+
   it('попереджає про відсутні колонки', () => {
     const r = analyzeBaseline(parseTable('FTD\n100\n200'));
     expect(r.warnings.length).toBe(2);

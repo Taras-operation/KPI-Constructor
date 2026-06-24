@@ -2,7 +2,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { metricLabel } from '@/lib/format';
+import { parseTable, analyzeBaseline, type BaselineResult } from '@/lib/baseline';
+
+const TREND_LABEL: Record<string, string> = { up: '↗', down: '↘', flat: '→' };
 
 type Grade = 'JUNIOR' | 'MIDDLE' | 'SENIOR';
 type BonusModel = 'LINEAR' | 'THRESHOLD' | 'MATRIX';
@@ -57,6 +61,15 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     (initial?.requiredOverrides ?? []).forEach((o: any) => { r[o.metricId] = o.reason; });
     return r;
   });
+
+  // D2: Baseline (крок 2)
+  const [baselineText, setBaselineText] = useState('');
+  const [baselineUrl, setBaselineUrl] = useState('');
+  const [baselineResult, setBaselineResult] = useState<BaselineResult | null>(null);
+  const [baselineError, setBaselineError] = useState('');
+  const [baselineBusy, setBaselineBusy] = useState(false);
+  // підказки планів з Baseline: metricId -> grade -> медіана
+  const [baselineSuggestions, setBaselineSuggestions] = useState<Record<string, Record<string, number>>>({});
 
   // Крок 3: менеджери (з базовим бонусом — D4)
   const [managers, setManagers] = useState<{ name: string; grade: Grade; userId: string; baseBonus: string }[]>(
@@ -168,15 +181,92 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     setPlans((prev) => ({ ...prev, [mgrIdx]: { ...(prev[mgrIdx] || {}), [metricId]: value } }));
   }
 
+  // --- D2: Baseline ---
+  const [baselineApprove, setBaselineApprove] = useState<Record<string, boolean>>({});
+  function matchBank(name: string): Metric | undefined {
+    return allMetrics.find((am) => am.name.trim().toLowerCase() === name.trim().toLowerCase());
+  }
+  async function baselineFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (!file) return;
+    setBaselineError('');
+    try {
+      if (/\.(xlsx|xls)$/i.test(file.name)) {
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const aoa = XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], { header: 1, blankrows: false, raw: false });
+        setBaselineText(aoa.map((r) => r.map((c) => String(c ?? '')).join('\t')).join('\n'));
+      } else setBaselineText(await file.text());
+    } catch { setBaselineError('Не вдалося прочитати файл.'); }
+    e.target.value = '';
+  }
+  async function baselineGoogle() {
+    if (!baselineUrl.trim()) return;
+    setBaselineBusy(true); setBaselineError('');
+    try {
+      const res = await fetch('/api/baseline/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: baselineUrl }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Помилка імпорту');
+      setBaselineText(d.text);
+    } catch (e: any) { setBaselineError(e.message); } finally { setBaselineBusy(false); }
+  }
+  function runBaseline() {
+    setBaselineError('');
+    const t = parseTable(baselineText);
+    if (t.headers.length === 0 || t.rows.length === 0) { setBaselineError('Вставте дані з заголовком і рядками.'); return; }
+    const res = analyzeBaseline(t);
+    setBaselineResult(res);
+    const appr: Record<string, boolean> = {};
+    res.metrics.forEach((m) => { const bm = matchBank(m.name); if (bm) appr[bm.id] = true; });
+    setBaselineApprove(appr);
+  }
+  function applyBaseline() {
+    if (!baselineResult) return;
+    const sugg = { ...baselineSuggestions };
+    setWeights((prev) => {
+      const next = { ...prev };
+      baselineResult.metrics.forEach((m) => {
+        const bm = matchBank(m.name);
+        if (bm && baselineApprove[bm.id]) {
+          if (!(bm.id in next)) next[bm.id] = '';
+          const g: Record<string, number> = {};
+          Object.entries(m.byGrade).forEach(([grade, v]: any) => { if (v.median != null) g[grade] = v.median; });
+          sugg[bm.id] = g;
+        }
+      });
+      return next;
+    });
+    // зняти можливі обґрунтування для повернених метрик
+    setExcludedReasons((prev) => {
+      const n = { ...prev };
+      baselineResult.metrics.forEach((m) => { const bm = matchBank(m.name); if (bm && baselineApprove[bm.id]) delete n[bm.id]; });
+      return n;
+    });
+    setBaselineSuggestions(sugg);
+    setStep(3);
+  }
+  function fillPlansFromBaseline() {
+    setPlans((prev) => {
+      const next: Record<number, Record<string, string>> = { ...prev };
+      managers.forEach((mgr, i) => {
+        selectedMetricIds.forEach((mid) => {
+          const val = baselineSuggestions[mid]?.[mgr.grade];
+          if (val != null && (next[i]?.[mid] ?? '') === '') {
+            next[i] = { ...(next[i] || {}), [mid]: String(val) };
+          }
+        });
+      });
+      return next;
+    });
+  }
+
   async function handleSave() {
     setError('');
     // Клієнтська валідація
     if (!departmentId || !teamLeadId || !monthInput) { setError('Заповніть відділ, тімліда і період'); setStep(1); return; }
-    if (selectedMetricIds.length === 0) { setError('Оберіть хоча б одну метрику'); setStep(2); return; }
-    if (Math.abs(weightSum - 100) > 0.01) { setError('Сума ваг має дорівнювати 100%'); setStep(2); return; }
-    if (managers.length === 0 || managers.some((m) => !m.name.trim())) { setError('Додайте менеджерів з іменами'); setStep(3); return; }
+    if (selectedMetricIds.length === 0) { setError('Оберіть хоча б одну метрику'); setStep(3); return; }
+    if (Math.abs(weightSum - 100) > 0.01) { setError('Сума ваг має дорівнювати 100%'); setStep(3); return; }
+    if (managers.length === 0 || managers.some((m) => !m.name.trim())) { setError('Додайте менеджерів з іменами'); setStep(4); return; }
     if (managers.some((m) => m.baseBonus === '' || isNaN(parseFloat(m.baseBonus)) || parseFloat(m.baseBonus) < 0)) {
-      setError('Вкажіть базовий бонус (>= 0) для кожного менеджера'); setStep(3); return;
+      setError('Вкажіть базовий бонус (>= 0) для кожного менеджера'); setStep(4); return;
     }
 
     const period = monthInput.replace('-', '');
@@ -220,7 +310,7 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     }
   }
 
-  const stepTitles = ['Загальне', 'Метрики і ваги', 'Менеджери', 'Плани', 'Бонусна модель'];
+  const stepTitles = ['Загальне', 'Baseline', 'Метрики і ваги', 'Менеджери', 'Плани', 'Бонусна модель'];
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
@@ -275,8 +365,69 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
             </div>
           )}
 
-          {/* Крок 2 */}
+          {/* Крок 2 — Baseline Analyzer */}
           {step === 2 && (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                Завантажте ретро-дані (колонки <code className="bg-gray-100 px-1 rounded">period</code>,{' '}
+                <code className="bg-gray-100 px-1 rounded">grade</code> + метрики). Система порахує статистику і запропонує метрики.
+                Крок необов&apos;язковий — можна пропустити і обрати метрики вручну.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <label className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 cursor-pointer hover:border-blue-400 shrink-0">
+                  📄 CSV / XLSX
+                  <input type="file" accept=".csv,.xlsx,.xls,text/csv" onChange={baselineFile} className="hidden" />
+                </label>
+                <div className="flex-1 flex gap-2">
+                  <input value={baselineUrl} onChange={(e) => setBaselineUrl(e.target.value)} placeholder="Посилання на Google-таблицю" className={`flex-1 ${selCls}`} />
+                  <button onClick={baselineGoogle} disabled={baselineBusy} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-blue-400 disabled:opacity-50">Імпорт</button>
+                </div>
+              </div>
+              <textarea value={baselineText} onChange={(e) => setBaselineText(e.target.value)} rows={5}
+                placeholder={'period\tgrade\tFTD, #\n202401\tJUNIOR\t100'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500" />
+              <button onClick={runBaseline} className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm">Аналізувати</button>
+
+              {baselineError && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded text-sm">{baselineError}</div>}
+
+              {baselineResult && (
+                <div className="space-y-2 mt-2">
+                  {baselineResult.metrics.length === 0 && <p className="text-gray-500 text-sm">Числових метрик не знайдено.</p>}
+                  {baselineResult.metrics.map((m) => {
+                    const bm = matchBank(m.name);
+                    return (
+                      <div key={m.name} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            {bm ? (
+                              <input type="checkbox" checked={!!baselineApprove[bm.id]} onChange={(e) => setBaselineApprove((p) => ({ ...p, [bm.id]: e.target.checked }))} />
+                            ) : <span className="w-4" />}
+                            <span className="font-medium text-gray-900">{m.name}</span>
+                            {!bm && <span className="text-xs text-amber-600">немає в банку метрик — додайте у розділі «Банк метрик»</span>}
+                          </label>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            сер. {m.mean ?? '—'} · σ {m.stdDev ?? '—'} {m.trend && `· ${TREND_LABEL[m.trend]}`}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-gray-600">
+                          {Object.entries(m.byGrade).map(([g, v]: any) => (
+                            <span key={g} className="px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-full">{g}: медіана {v.median ?? '—'}</span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button onClick={applyBaseline} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm">
+                    Застосувати обрані метрики до конфігурації
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Крок 3 — метрики і ваги */}
+          {step === 3 && (
             <div>
               <div className={`mb-3 text-sm font-medium ${Math.abs(weightSum - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
                 Сума ваг: {weightSum.toFixed(2)}% / 100%
@@ -313,8 +464,8 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
             </div>
           )}
 
-          {/* Крок 3 */}
-          {step === 3 && (
+          {/* Крок 4 — менеджери */}
+          {step === 4 && (
             <div className="space-y-2">
               {managers.map((m, i) => (
                 <div key={i} className="flex gap-2 items-center">
@@ -355,8 +506,8 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
             </div>
           )}
 
-          {/* Крок 4 */}
-          {step === 4 && (
+          {/* Крок 5 — плани */}
+          {step === 5 && (
             <div className="overflow-x-auto">
               {selectedMetrics.length === 0 || managers.length === 0 ? (
                 <p className="text-gray-500 text-sm">Спочатку оберіть метрики і додайте менеджерів.</p>
@@ -367,6 +518,11 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                     «Норма» — медіана факту з HISTORY по грейду менеджера.
                     <span className="text-amber-600"> Жовтим</span> підсвічені плани з відхиленням &gt;25%.
                   </p>
+                )}
+                {Object.keys(baselineSuggestions).length > 0 && (
+                  <button onClick={fillPlansFromBaseline} className="mb-3 text-sm text-blue-600 hover:text-blue-800">
+                    ⬇ Підставити плани з Baseline (медіана по грейду)
+                  </button>
                 )}
                 <table className="text-sm">
                   <thead>
@@ -415,8 +571,8 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
             </div>
           )}
 
-          {/* Крок 5 */}
-          {step === 5 && (
+          {/* Крок 6 — бонусна модель */}
+          {step === 6 && (
             <div className="space-y-4">
               <Field label="Модель бонусу *">
                 <select value={bonusModel} onChange={(e) => setBonusModel(e.target.value as BonusModel)} className={selCls}>
@@ -453,8 +609,8 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
           <button onClick={() => onClose(false)} className="px-4 py-2 text-gray-600 hover:text-gray-900">Скасувати</button>
           <div className="flex gap-2">
             {step > 1 && <button onClick={() => setStep(step - 1)} className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg">Назад</button>}
-            {step < 5 && <button onClick={() => setStep(step + 1)} className="px-4 py-2 bg-gray-800 text-white rounded-lg">Далі</button>}
-            {step === 5 && (
+            {step < 6 && <button onClick={() => setStep(step + 1)} className="px-4 py-2 bg-gray-800 text-white rounded-lg">Далі</button>}
+            {step === 6 && (
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg">
                 {saving ? 'Збереження...' : 'Зберегти чернетку'}
               </button>

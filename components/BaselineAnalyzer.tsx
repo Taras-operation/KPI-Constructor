@@ -23,6 +23,8 @@ function stability(cv: number | null): { label: string; cls: string } {
   return { label: `нестабільна (CV ${cv})`, cls: 'text-red-600' };
 }
 
+const TREND_LABEL: Record<string, string> = { up: '↗ зростає', down: '↘ падає', flat: '→ стабільно' };
+
 // Привести рядки до довжини заголовків.
 function normalize(headers: string[], rows: string[][]): string[][] {
   return rows.map((r) => {
@@ -235,10 +237,14 @@ export default function BaselineAnalyzer() {
           ) : (
             result.metrics.map((m) => (
               <div key={m.name} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-baseline justify-between mb-3">
+                <div className="flex items-baseline justify-between mb-1">
                   <h3 className="font-semibold text-gray-900">{m.name}</h3>
                   <span className={`text-xs ${stability(m.cv).cls}`}>{stability(m.cv).label} · {m.samples} значень</span>
                 </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Середнє: {m.mean ?? '—'} · Std dev: {m.stdDev ?? '—'}
+                  {m.trend && <span className="ml-2">· Тренд: {TREND_LABEL[m.trend]}</span>}
+                </p>
 
                 {result.grades.length > 0 && (
                   <table className="text-sm mb-3">

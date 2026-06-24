@@ -3,7 +3,7 @@
 // медіани по грейдах, стабільність (CV), сезональність, рекомендовані плани.
 // Чисті функції без залежностей від БД.
 
-import { median, coefficientOfVariation } from '@/lib/stats';
+import { median, mean as meanOf, stdDev, coefficientOfVariation } from '@/lib/stats';
 
 export interface ParsedTable {
   headers: string[];
@@ -23,11 +23,16 @@ export function parseTable(text: string): ParsedTable {
   return { headers, rows };
 }
 
+export type Trend = 'up' | 'down' | 'flat';
+
 export interface MetricAnalysis {
   name: string;
   samples: number;
+  mean: number | null;
+  stdDev: number | null;
   cv: number | null; // коефіцієнт варіації (стабільність): менше = стабільніше
-  byGrade: Record<string, { median: number | null; count: number }>;
+  trend: Trend | null; // динаміка за періодами
+  byGrade: Record<string, { median: number | null; mean: number | null; count: number }>;
   seasonality: { month: string; index: number; samples: number }[];
 }
 
@@ -78,6 +83,7 @@ export function analyzeBaseline(
     const all: number[] = [];
     const byGradeVals: Record<string, number[]> = {};
     const byMonthVals: Record<string, number[]> = {};
+    const byPeriodVals: Record<string, number[]> = {}; // повний період для тренду
 
     for (const row of table.rows) {
       const raw = row[col.i];
@@ -95,16 +101,18 @@ export function analyzeBaseline(
         }
       }
       if (periodIdx !== -1) {
-        const mo = monthOf(row[periodIdx] ?? '');
+        const periodRaw = (row[periodIdx] ?? '').trim();
+        const mo = monthOf(periodRaw);
         if (mo) (byMonthVals[mo] = byMonthVals[mo] || []).push(value);
+        if (periodRaw) (byPeriodVals[periodRaw] = byPeriodVals[periodRaw] || []).push(value);
       }
     }
 
     if (all.length === 0) continue;
 
-    const byGrade: Record<string, { median: number | null; count: number }> = {};
+    const byGrade: Record<string, { median: number | null; mean: number | null; count: number }> = {};
     for (const [g, vals] of Object.entries(byGradeVals)) {
-      byGrade[g] = { median: median(vals), count: vals.length };
+      byGrade[g] = { median: median(vals), mean: meanOf(vals), count: vals.length };
     }
 
     const allMean = all.reduce((s, v) => s + v, 0) / all.length;
@@ -115,10 +123,28 @@ export function analyzeBaseline(
       })
       .sort((a, b) => a.month.localeCompare(b.month));
 
+    // Тренд: порівняння середнього першого і останнього періоду (>=2 періоди)
+    let trend: Trend | null = null;
+    const periodsSorted = Object.keys(byPeriodVals).sort();
+    if (periodsSorted.length >= 2) {
+      const avg = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
+      const first = avg(byPeriodVals[periodsSorted[0]]);
+      const last = avg(byPeriodVals[periodsSorted[periodsSorted.length - 1]]);
+      if (first !== 0) {
+        const change = (last - first) / Math.abs(first);
+        trend = change > 0.05 ? 'up' : change < -0.05 ? 'down' : 'flat';
+      } else {
+        trend = last > 0 ? 'up' : 'flat';
+      }
+    }
+
     metrics.push({
       name: col.name,
       samples: all.length,
+      mean: meanOf(all),
+      stdDev: stdDev(all),
       cv: coefficientOfVariation(all),
+      trend,
       byGrade,
       seasonality: seasonality.length > 1 ? seasonality : [],
     });
