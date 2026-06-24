@@ -34,6 +34,19 @@ export default function ConfigurationsManager() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editInitial, setEditInitial] = useState<any | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [ai, setAi] = useState<{ open: boolean; busy: boolean; text: string; dept: string }>({ open: false, busy: false, text: '', dept: '' });
+
+  async function runAi(c: ConfigRow) {
+    setAi({ open: true, busy: true, text: '', dept: c.department.name });
+    try {
+      const res = await fetch(`/api/configurations/${c.id}/ai-analysis`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Помилка AI');
+      setAi({ open: true, busy: false, text: d.text, dept: c.department.name });
+    } catch (e: any) {
+      setAi({ open: true, busy: false, text: `⚠ ${e.message}`, dept: c.department.name });
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -148,7 +161,10 @@ export default function ConfigurationsManager() {
                       : <span className="text-amber-600 text-xs">Очікує погодження тімліда</span>
                   )}
                   {c.status === 'ACTIVE' && (
-                    <button onClick={() => action(c.id, 'ARCHIVE')} className="text-gray-400 hover:text-red-600">Архівувати</button>
+                    <>
+                      <button onClick={() => runAi(c)} className="text-purple-600 hover:text-purple-800">✦ AI-аналіз</button>
+                      <button onClick={() => action(c.id, 'ARCHIVE')} className="text-gray-400 hover:text-red-600">Архівувати</button>
+                    </>
                   )}
                 </div>
               </div>
@@ -157,6 +173,24 @@ export default function ConfigurationsManager() {
         </div>
       )
       ); })()}
+
+      {ai.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={() => setAi((a) => ({ ...a, open: false }))}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">✦ AI-аналіз — {ai.dept}</h3>
+              <button onClick={() => setAi((a) => ({ ...a, open: false }))} className="text-gray-400 hover:text-gray-700">✕</button>
+            </div>
+            <div className="px-6 py-5 overflow-y-auto flex-1">
+              {ai.busy ? (
+                <p className="text-gray-500 text-sm">AI аналізує конфігурацію та історію...</p>
+              ) : (
+                <div className="text-sm text-gray-800 whitespace-pre-wrap">{ai.text}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {wizardOpen && (
         <ConfigurationWizard

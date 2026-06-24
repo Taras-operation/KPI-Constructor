@@ -71,6 +71,8 @@ export default function ConfigurationWizard({ initial, onClose, propose = false 
   const [baselineBusy, setBaselineBusy] = useState(false);
   // підказки планів з Baseline: metricId -> grade -> медіана
   const [baselineSuggestions, setBaselineSuggestions] = useState<Record<string, Record<string, number>>>({});
+  const [baselineAi, setBaselineAi] = useState('');
+  const [baselineAiBusy, setBaselineAiBusy] = useState(false);
 
   // Крок 3: менеджери (з базовим бонусом — D4)
   const [managers, setManagers] = useState<{ name: string; grade: Grade; userId: string; baseBonus: string }[]>(
@@ -218,6 +220,19 @@ export default function ConfigurationWizard({ initial, onClose, propose = false 
     const appr: Record<string, boolean> = {};
     res.metrics.forEach((m) => { const bm = matchBank(m.name); if (bm) appr[bm.id] = true; });
     setBaselineApprove(appr);
+  }
+  async function runBaselineAi() {
+    if (!baselineResult) return;
+    setBaselineAiBusy(true); setBaselineAi('');
+    try {
+      const res = await fetch('/api/ai/baseline', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metrics: baselineResult.metrics }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Помилка AI');
+      setBaselineAi(d.text);
+    } catch (e: any) { setBaselineAi(`⚠ ${e.message}`); } finally { setBaselineAiBusy(false); }
   }
   function applyBaseline() {
     if (!baselineResult) return;
@@ -422,9 +437,17 @@ export default function ConfigurationWizard({ initial, onClose, propose = false 
                       </div>
                     );
                   })}
-                  <button onClick={applyBaseline} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm">
-                    Застосувати обрані метрики до конфігурації
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={applyBaseline} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm">
+                      Застосувати обрані метрики до конфігурації
+                    </button>
+                    <button onClick={runBaselineAi} disabled={baselineAiBusy} className="px-4 py-2 border border-purple-300 text-purple-700 hover:bg-purple-50 disabled:opacity-50 rounded-lg text-sm">
+                      {baselineAiBusy ? 'AI аналізує...' : '✦ AI-рекомендації'}
+                    </button>
+                  </div>
+                  {baselineAi && (
+                    <div className="border border-purple-200 bg-purple-50 rounded-lg p-3 text-sm text-gray-800 whitespace-pre-wrap">{baselineAi}</div>
+                  )}
                 </div>
               )}
             </div>
