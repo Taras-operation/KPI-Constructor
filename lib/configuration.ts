@@ -30,7 +30,11 @@ export interface ConfigInput {
  * requiredMetricIds — обов'язкові для відділу метрики (мають бути включені).
  * Повертає текст помилки або null, якщо все валідно.
  */
-export function validateConfigInput(input: ConfigInput, requiredMetricIds: string[]): string | null {
+export function validateConfigInput(
+  input: ConfigInput,
+  requiredMetricIds: string[],
+  justifiedExclusions: Set<string> = new Set()
+): string | null {
   if (!input.metrics || input.metrics.length === 0) {
     return 'Потрібно обрати хоча б одну метрику';
   }
@@ -47,9 +51,10 @@ export function validateConfigInput(input: ConfigInput, requiredMetricIds: strin
   }
 
   const selectedIds = new Set(input.metrics.map((m) => m.metricId));
-  const missing = requiredMetricIds.filter((id) => !selectedIds.has(id));
+  // Обов'язкову метрику можна не включати лише за наявності обґрунтування (D3).
+  const missing = requiredMetricIds.filter((id) => !selectedIds.has(id) && !justifiedExclusions.has(id));
   if (missing.length > 0) {
-    return 'Не включені обов\'язкові для відділу метрики';
+    return 'Не включені обов\'язкові для відділу метрики (зняти можна лише з обґрунтуванням)';
   }
 
   if (input.managers.some((m) => !m.name || !m.name.trim())) {

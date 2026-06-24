@@ -109,6 +109,9 @@ model KPIConfiguration {
   // Чи дозволено менеджерам самостійно вносити факт (Phase 2, F-27)
   allowManagerInput Boolean    @default(false)
 
+  // Зняті обов'язкові метрики з обґрунтуванням (D3): [{metricId, name, reason}]
+  requiredOverrides Json       @default("[]")
+
   // Коментар від тімліда при погодженні
   teamLeadComment   String?
   

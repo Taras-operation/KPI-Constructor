@@ -65,7 +65,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { status: 'ACTIVE', requiredForDepartments: { has: departmentId } },
       select: { id: true },
     });
-    const validationError = validateConfigInput(input, requiredMetrics.map((m) => m.id));
+    const overrides = (body.requiredOverrides ?? []).filter((o) => o.reason.trim());
+    const justified = new Set(overrides.map((o) => o.metricId));
+    const validationError = validateConfigInput(input, requiredMetrics.map((m) => m.id), justified);
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
@@ -81,6 +83,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           ...(body.bonusModel && { bonusModel: body.bonusModel }),
           ...(body.bonusParameters && { bonusParameters: body.bonusParameters }),
           ...(body.allowManagerInput !== undefined && { allowManagerInput: body.allowManagerInput }),
+          requiredOverrides: overrides,
         },
       });
       // Перезаписуємо вкладені дані (каскад видаляє CurrentData разом з менеджерами).

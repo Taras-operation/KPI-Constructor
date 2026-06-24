@@ -104,6 +104,11 @@ const bonusParameters = z.object({
   maxCoefficient: z.number().optional(),
 });
 const plans = z.record(z.string(), z.record(z.string(), z.union([z.number(), z.string(), z.null()]))).optional();
+const requiredOverrides = z.array(z.object({
+  metricId: z.string().min(1),
+  name: z.string().optional(),
+  reason: z.string().min(1, 'потрібне обґрунтування'),
+})).optional();
 
 export const configurationCreateSchema = z.object({
   departmentId: z.string().min(1),
@@ -116,6 +121,7 @@ export const configurationCreateSchema = z.object({
   metrics: z.array(configMetric),
   managers: z.array(configManager),
   plans,
+  requiredOverrides,
 });
 
 export const configurationUpdateSchema = z.object({
@@ -129,6 +135,7 @@ export const configurationUpdateSchema = z.object({
   metrics: z.array(configMetric),
   managers: z.array(configManager),
   plans,
+  requiredOverrides,
 });
 
 // ---- DATA / status ----

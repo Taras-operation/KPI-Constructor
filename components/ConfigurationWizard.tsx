@@ -51,6 +51,13 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     return w;
   });
 
+  // D3: зняті обов'язкові метрики -> обґрунтування
+  const [excludedReasons, setExcludedReasons] = useState<Record<string, string>>(() => {
+    const r: Record<string, string> = {};
+    (initial?.requiredOverrides ?? []).forEach((o: any) => { r[o.metricId] = o.reason; });
+    return r;
+  });
+
   // Крок 3: менеджери (з базовим бонусом — D4)
   const [managers, setManagers] = useState<{ name: string; grade: Grade; userId: string; baseBonus: string }[]>(
     initial?.managers?.map((m: any) => ({ name: m.name, grade: m.grade, userId: m.userId ?? '', baseBonus: m.baseBonus != null ? String(m.baseBonus) : '' }))
@@ -101,22 +108,38 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
     [allMetrics, departmentId]
   );
 
-  // Автовибір обов'язкових метрик при зміні відділу
+  // Автовибір обов'язкових метрик при зміні відділу (крім свідомо знятих)
   useEffect(() => {
     if (!departmentId) return;
     setWeights((prev) => {
       const next = { ...prev };
-      requiredIds.forEach((id) => { if (!(id in next)) next[id] = ''; });
+      requiredIds.forEach((id) => { if (!(id in next) && !(id in excludedReasons)) next[id] = ''; });
       return next;
     });
-  }, [departmentId, requiredIds]);
+  }, [departmentId, requiredIds, excludedReasons]);
 
   const selectedMetricIds = Object.keys(weights);
   const selectedMetrics = allMetrics.filter((m) => selectedMetricIds.includes(m.id));
   const weightSum = selectedMetricIds.reduce((s, id) => s + (parseFloat(weights[id]) || 0), 0);
 
   function toggleMetric(id: string) {
-    if (requiredIds.has(id)) return; // заблоковано
+    const required = requiredIds.has(id);
+    const selected = id in weights;
+
+    if (required && selected) {
+      // D3: зняти обов'язкову можна лише з обґрунтуванням
+      const reason = window.prompt('Обґрунтування зняття обов\'язкової метрики (видно керівництву):');
+      if (!reason || !reason.trim()) return;
+      setExcludedReasons((p) => ({ ...p, [id]: reason.trim() }));
+      setWeights((prev) => { const next = { ...prev }; delete next[id]; return next; });
+      return;
+    }
+    if (required && !selected) {
+      // повертаємо обов'язкову — прибираємо обґрунтування
+      setExcludedReasons((p) => { const n = { ...p }; delete n[id]; return n; });
+      setWeights((prev) => ({ ...prev, [id]: '' }));
+      return;
+    }
     setWeights((prev) => {
       const next = { ...prev };
       if (id in next) delete next[id];
@@ -174,6 +197,9 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
       metrics: selectedMetricIds.map((id) => ({ metricId: id, weight: parseFloat(weights[id]) || 0 })),
       managers: managers.map((m) => ({ name: m.name.trim(), grade: m.grade, userId: m.userId || null, baseBonus: parseFloat(m.baseBonus) })),
       plans,
+      requiredOverrides: Object.entries(excludedReasons)
+        .filter(([id]) => requiredIds.has(id) && !(id in weights))
+        .map(([metricId, reason]) => ({ metricId, name: allMetrics.find((m) => m.id === metricId)?.name, reason })),
     };
 
     setSaving(true);
@@ -261,10 +287,13 @@ export default function ConfigurationWizard({ initial, onClose }: Props) {
                   const required = requiredIds.has(m.id);
                   return (
                     <div key={m.id} className="flex items-center gap-3 py-1.5 border-b border-gray-50">
-                      <input type="checkbox" checked={selected} disabled={required} onChange={() => toggleMetric(m.id)} />
+                      <input type="checkbox" checked={selected} onChange={() => toggleMetric(m.id)} />
                       <span className="flex-1 text-sm text-gray-900">
                         {m.name}
                         {required && <span className="ml-2 text-xs text-amber-600">обов&apos;язкова</span>}
+                        {required && !selected && excludedReasons[m.id] && (
+                          <span className="ml-2 text-xs text-red-600">знято: {excludedReasons[m.id]}</span>
+                        )}
                       </span>
                       {selected && (
                         <div className="flex items-center gap-1">

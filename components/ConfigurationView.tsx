@@ -102,6 +102,18 @@ export default function ConfigurationView({ config }: Props) {
         </div>
       </div>
 
+      {/* Зняті обов'язкові метрики (D3) */}
+      {Array.isArray(config.requiredOverrides) && config.requiredOverrides.length > 0 && (
+        <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
+          <h4 className="font-medium text-amber-800 mb-2 text-sm">Зняті обов&apos;язкові метрики (з обґрунтуванням)</h4>
+          <ul className="space-y-1 text-sm text-amber-800">
+            {config.requiredOverrides.map((o: any) => (
+              <li key={o.metricId}>• <span className="font-medium">{o.name || o.metricId}</span> — {o.reason}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Бонусна модель */}
       <div className="text-sm text-gray-700">
         <h4 className="font-medium text-gray-900 mb-2">Параметри бонусу</h4>

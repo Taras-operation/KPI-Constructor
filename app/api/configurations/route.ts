@@ -56,7 +56,9 @@ export async function POST(request: NextRequest) {
       where: { status: 'ACTIVE', requiredForDepartments: { has: departmentId } },
       select: { id: true },
     });
-    const validationError = validateConfigInput(input, requiredMetrics.map((m) => m.id));
+    const overrides = (parsed.data.requiredOverrides ?? []).filter((o) => o.reason.trim());
+    const justified = new Set(overrides.map((o) => o.metricId));
+    const validationError = validateConfigInput(input, requiredMetrics.map((m) => m.id), justified);
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
           periodicity: periodicity ?? 'MONTHLY',
           status: 'DRAFT',
           allowManagerInput: allowManagerInput ?? false,
+          requiredOverrides: overrides,
           bonusModel,
           bonusParameters,
         },
