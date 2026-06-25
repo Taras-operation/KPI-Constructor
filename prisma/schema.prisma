@@ -68,6 +68,7 @@ model Metric {
   // Relations
   configurationMetrics ConfigurationMetric[]
   currentData       CurrentData[]
+  factRecords       FactRecord[]
   historyMetrics    HistoryMetric[]
   
   createdAt     DateTime   @default(now())
@@ -125,6 +126,7 @@ model KPIConfiguration {
   metrics           ConfigurationMetric[]
   managers          TeamManager[]
   currentData       CurrentData[]
+  factRecords       FactRecord[]
   history           HistoryRecord[]
   changeRequests    ConfigChangeRequest[]
 
@@ -212,6 +214,7 @@ model TeamManager {
 
   // Relations
   currentData       CurrentData[]
+  factRecords       FactRecord[]
   historyRecords    HistoryRecord[]
   
   createdAt         DateTime   @default(now())
@@ -245,6 +248,29 @@ model CurrentData {
   updatedBy         String? // ID користувача який оновив
   
   @@unique([configurationId, managerId, metricId])
+}
+
+// W: помісячний факт. План лишається у CurrentData (не помісячний),
+// факт зберігається тут окремо для кожного періоду (місяця).
+model FactRecord {
+  id                String     @id @default(cuid())
+  configurationId   String
+  configuration     KPIConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+
+  managerId         String
+  manager           TeamManager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  metricId          String
+  metric            Metric     @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  period            String     // YYYYMM
+  factValue         Decimal?
+
+  updatedAt         DateTime   @updatedAt
+  updatedBy         String?
+
+  @@unique([configurationId, managerId, metricId, period])
+  @@index([configurationId, period])
 }
 
 // ============ ІСТОРІЯ (АРХІВ ЗАКРИТИХ МІСЯЦІВ) ============

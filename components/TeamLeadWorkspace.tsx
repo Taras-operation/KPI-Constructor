@@ -4,12 +4,14 @@
 import { useState } from 'react';
 import TeamLeadDashboard from './TeamLeadDashboard';
 import TeamLeadConfigs from './TeamLeadConfigs';
+import TeamLeadFront from './TeamLeadFront';
 
-type Section = 'dashboard' | 'configs';
+type Section = 'dashboard' | 'configs' | 'front';
 
 const MENU: { key: Section; label: string; icon: string }[] = [
   { key: 'dashboard', label: 'Дашборд', icon: '▣' },
-  { key: 'configs', label: 'Конфігурації та FRONT', icon: '◆' },
+  { key: 'configs', label: 'Конфігурації', icon: '◆' },
+  { key: 'front', label: 'FRONT', icon: '▦' },
 ];
 
 export default function TeamLeadWorkspace() {
@@ -37,6 +39,7 @@ export default function TeamLeadWorkspace() {
       <div className="flex-1 min-w-0">
         {section === 'dashboard' && <TeamLeadDashboard />}
         {section === 'configs' && <TeamLeadConfigs />}
+        {section === 'front' && <TeamLeadFront />}
       </div>
     </div>
   );

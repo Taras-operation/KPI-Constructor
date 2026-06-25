@@ -52,7 +52,7 @@ export function computeFront(
   managers: FrontManagerInput[],
   data: FrontDataMap,
   bonusModel: BonusModel,
-  bonusParameters: { threshold?: number; maxCoefficient?: number }
+  bonusParameters: { threshold?: number; maxCoefficient?: number; matrix?: { from: number; mult: number }[] }
 ): FrontManagerResult[] {
   return managers.map((mgr) => {
     const cells = data[mgr.id] ?? {};

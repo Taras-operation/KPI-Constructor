@@ -19,6 +19,7 @@ interface FrontManager {
 }
 interface Front {
   period: string; status: string; currency: string; saved: boolean;
+  periods: string[]; savedPeriods: string[];
   department: { name: string };
   managers: FrontManager[]; metrics: FrontMetric[];
 }
@@ -34,10 +35,11 @@ export default function FrontTable({ configId, onClose }: Props) {
   const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p?: string) => {
     setError('');
     try {
-      const res = await fetch(`/api/configurations/${configId}/front`);
+      const q = p ? `?period=${p}` : '';
+      const res = await fetch(`/api/configurations/${configId}/front${q}`);
       if (!res.ok) throw new Error((await res.json()).error || 'Помилка завантаження');
       const data: Front = await res.json();
       setFront(data);
@@ -47,6 +49,7 @@ export default function FrontTable({ configId, onClose }: Props) {
         m.metrics.forEach((mr) => { f[m.id][mr.metricId] = mr.fact != null ? String(mr.fact) : ''; });
       });
       setFacts(f);
+      setComments({});
     } catch (e: any) { setError(e.message); }
   }, [configId]);
 
@@ -69,25 +72,26 @@ export default function FrontTable({ configId, onClose }: Props) {
       });
       const res = await fetch(`/api/configurations/${configId}/data`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries }),
+        body: JSON.stringify({ entries, period: front.period }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Помилка збереження факту');
       setInfo('Факт збережено, показники перераховано.');
-      await load();
+      await load(front.period);
     } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   }
 
   async function saveMonth() {
-    if (!confirm('Зберегти місяць у HISTORY? Після збереження дані стануть незмінними.')) return;
+    if (!front) return;
+    if (!confirm(`Зберегти місяць ${fmtPeriod(front.period)} у HISTORY? Після збереження дані стануть незмінними.`)) return;
     setBusy(true); setError(''); setInfo('');
     try {
       const res = await fetch(`/api/configurations/${configId}/history`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comments }),
+        body: JSON.stringify({ comments, period: front.period }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Помилка збереження місяця');
       setInfo('Місяць збережено в HISTORY.');
-      await load();
+      await load(front.period);
     } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   }
 
@@ -95,9 +99,27 @@ export default function FrontTable({ configId, onClose }: Props) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-[96vw] max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">FRONT — поточний місяць</h3>
-            {front && <p className="text-sm text-gray-500">{front.department.name} · період {fmtPeriod(front.period)}</p>}
+          <div className="flex items-center gap-4 flex-wrap">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">FRONT — внесення факту</h3>
+              {front && <p className="text-sm text-gray-500">{front.department.name}</p>}
+            </div>
+            {front && front.periods?.length > 0 && (
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                Місяць:
+                <select
+                  value={front.period}
+                  onChange={(e) => load(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-gray-900 text-sm"
+                >
+                  {front.periods.map((p) => (
+                    <option key={p} value={p}>
+                      {fmtPeriod(p)}{front.savedPeriods?.includes(p) ? ' ✓ збережено' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">✕</button>
         </div>
@@ -115,9 +137,10 @@ export default function FrontTable({ configId, onClose }: Props) {
             <div className="mb-4">
               <FactImport
                 configId={configId}
+                period={front.period}
                 managers={front.managers.map((m) => ({ id: m.id, name: m.name }))}
                 metrics={front.metrics.map((m) => ({ metricId: m.metricId, name: m.name }))}
-                onImported={load}
+                onImported={() => load(front.period)}
               />
             </div>
           )}

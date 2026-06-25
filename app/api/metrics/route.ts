@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const valueType = searchParams.get('valueType');
     const department = searchParams.get('department');
+    const withUsage = searchParams.get('withUsage');
 
     const where: Prisma.MetricWhereInput = {};
     if (status) where.status = status as any;
@@ -31,9 +32,15 @@ export async function GET(request: NextRequest) {
     const metrics = await prisma.metric.findMany({
       where,
       orderBy: { name: 'asc' },
+      ...(withUsage ? { include: { _count: { select: { configurationMetrics: true } } } } : {}),
     });
 
-    return NextResponse.json(metrics);
+    // Популярність — скільки разів метрику використано в конфігураціях (L)
+    const result = withUsage
+      ? metrics.map((m: any) => { const { _count, ...rest } = m; return { ...rest, usageCount: _count?.configurationMetrics ?? 0 }; })
+      : metrics;
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Помилка при отриманні метрик:', error);
     return NextResponse.json(

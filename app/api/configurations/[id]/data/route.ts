@@ -42,15 +42,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Вносити факт можна лише в активну конфігурацію' }, { status: 400 });
   }
 
-  // Незмінність HISTORY: якщо період уже збережено — факт редагувати не можна.
-  const saved = await prisma.historyRecord.count({ where: { configurationId: id, period: config.period } });
+  const parsed = await parseBody(request, dataSchema);
+  if ('error' in parsed) return parsed.error;
+  const { entries, period } = parsed.data;
+  const selectedPeriod = period ?? config.period; // W: місяць факту
+
+  // Незмінність HISTORY: якщо цей місяць уже збережено — факт редагувати не можна.
+  const saved = await prisma.historyRecord.count({ where: { configurationId: id, period: selectedPeriod } });
   if (saved > 0) {
     return NextResponse.json({ error: 'Місяць збережено в HISTORY — дані заблоковані' }, { status: 400 });
   }
-
-  const parsed = await parseBody(request, dataSchema);
-  if ('error' in parsed) return parsed.error;
-  const { entries } = parsed.data;
 
   const validMetrics = new Set(config.metrics.map((m) => m.metricId));
   const validManagers = allowedManagerIds ?? new Set(config.managers.map((m) => m.id));
@@ -60,12 +61,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     .map((e) => {
       const fact =
         e.factValue === null || e.factValue === '' ? null : new Prisma.Decimal(e.factValue);
-      return prisma.currentData.upsert({
+      return prisma.factRecord.upsert({
         where: {
-          configurationId_managerId_metricId: {
+          configurationId_managerId_metricId_period: {
             configurationId: id,
             managerId: e.managerId,
             metricId: e.metricId,
+            period: selectedPeriod,
           },
         },
         update: { factValue: fact, updatedBy: guard.user.userId },
@@ -73,6 +75,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           configurationId: id,
           managerId: e.managerId,
           metricId: e.metricId,
+          period: selectedPeriod,
           factValue: fact,
           updatedBy: guard.user.userId,
         },

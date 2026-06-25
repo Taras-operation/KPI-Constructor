@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import ConfigurationWizard from './ConfigurationWizard';
+import Markdown from './Markdown';
 
 interface ConfigRow {
   id: string;
@@ -185,7 +186,7 @@ export default function ConfigurationsManager() {
               {ai.busy ? (
                 <p className="text-gray-500 text-sm">AI аналізує конфігурацію та історію...</p>
               ) : (
-                <div className="text-sm text-gray-800 whitespace-pre-wrap">{ai.text}</div>
+                <Markdown text={ai.text} />
               )}
             </div>
           </div>

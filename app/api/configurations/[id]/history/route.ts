@@ -37,10 +37,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if ('error' in guard) return guard.error;
 
   const { id } = await params;
-  const bundle = await buildFront(id);
+  const parsed = await parseBody(request, historySaveSchema);
+  if ('error' in parsed) return parsed.error;
+  const { comments, period } = parsed.data;
+
+  const bundle = await buildFront(id, period);
   if (!bundle) return NextResponse.json({ error: 'Конфігурацію не знайдено' }, { status: 404 });
 
-  const { config, results } = bundle;
+  const { config, results, selectedPeriod } = bundle;
   if (guard.user.role === 'TEAM_LEAD' && config.teamLeadId !== guard.user.userId) {
     return NextResponse.json({ error: 'Доступ заборонений' }, { status: 403 });
   }
@@ -48,14 +52,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'Зберегти місяць можна лише для активної конфігурації' }, { status: 400 });
   }
 
-  const already = await prisma.historyRecord.count({ where: { configurationId: id, period: config.period } });
+  const already = await prisma.historyRecord.count({ where: { configurationId: id, period: selectedPeriod } });
   if (already > 0) {
     return NextResponse.json({ error: 'Цей місяць вже збережено в HISTORY (дані незмінні)' }, { status: 400 });
   }
-
-  const parsed = await parseBody(request, historySaveSchema);
-  if ('error' in parsed) return parsed.error;
-  const { comments } = parsed.data;
 
   await prisma.$transaction(
     results.map((mgr) =>
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         data: {
           configurationId: id,
           managerId: mgr.id,
-          period: config.period,
+          period: selectedPeriod,
           kpiPercentage: new Prisma.Decimal(mgr.kpiPercentage),
           bonusAmount: new Prisma.Decimal(mgr.bonusAmount),
           comment: comments?.[mgr.id] ?? null,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     action: 'CREATE',
     tableName: 'HistoryRecord',
     recordId: id,
-    newValues: { period: config.period, records: results.length },
+    newValues: { period: selectedPeriod, records: results.length },
   });
 
   return NextResponse.json({ message: 'Місяць збережено в HISTORY', records: results.length }, { status: 201 });

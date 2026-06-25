@@ -29,6 +29,9 @@ export interface MetricAnalysis {
   name: string;
   samples: number;
   mean: number | null;
+  median: number | null;
+  min: number | null;
+  max: number | null;
   stdDev: number | null;
   cv: number | null; // коефіцієнт варіації (стабільність): менше = стабільніше
   trend: Trend | null; // динаміка за періодами
@@ -142,6 +145,9 @@ export function analyzeBaseline(
       name: col.name,
       samples: all.length,
       mean: meanOf(all),
+      median: median(all),
+      min: Math.min(...all),
+      max: Math.max(...all),
       stdDev: stdDev(all),
       cv: coefficientOfVariation(all),
       trend,

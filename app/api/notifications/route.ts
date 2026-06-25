@@ -28,7 +28,7 @@ export async function GET() {
       include: {
         department: { select: { name: true } },
         _count: { select: { managers: true, metrics: true } },
-        currentData: { select: { factValue: true } },
+        factRecords: { where: { period, factValue: { not: null } }, select: { id: true } },
         history: { where: { period }, select: { id: true }, take: 1 },
       },
     });
@@ -36,7 +36,7 @@ export async function GET() {
     for (const c of configs) {
       const link = role === 'TEAM_LEAD' ? '/team-lead' : '/operations';
       const expected = c._count.managers * c._count.metrics;
-      const filled = c.currentData.filter((d) => d.factValue !== null).length;
+      const filled = c.factRecords.length;
       const missing = expected - filled;
       const savedThisPeriod = c.history.length > 0;
 
@@ -82,7 +82,7 @@ export async function GET() {
       const saved = await prisma.historyRecord.count({ where: { configurationId: tm.configurationId, period: tm.configuration.period } });
       if (saved > 0) continue;
       const total = await prisma.currentData.count({ where: { configurationId: tm.configurationId, managerId: tm.id } });
-      const filled = await prisma.currentData.count({ where: { configurationId: tm.configurationId, managerId: tm.id, factValue: { not: null } } });
+      const filled = await prisma.factRecord.count({ where: { configurationId: tm.configurationId, managerId: tm.id, period: tm.configuration.period, factValue: { not: null } } });
       if (filled < total || total === 0) {
         notes.push({ level: 'info', text: `${tm.configuration.department.name}: внесіть свій факт за період`, link: '/manager' });
       }

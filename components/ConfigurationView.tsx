@@ -122,7 +122,13 @@ export default function ConfigurationView({ config }: Props) {
           <p>Поріг: {bp.threshold}% · Макс. коефіцієнт: {bp.maxCoefficient}</p>
         )}
         {config.bonusModel === 'MATRIX' && (
-          <p className="text-gray-500">Зони: &lt;70% → 0, 70–89% → 50%, 90–99% → 100%, 100%+ → 120%.</p>
+          Array.isArray(bp.matrix) && bp.matrix.length > 0 ? (
+            <p className="text-gray-500">
+              Зони: {[...bp.matrix].sort((a: any, b: any) => a.from - b.from).map((z: any) => `від ${z.from}% → ×${z.mult}`).join(', ')}.
+            </p>
+          ) : (
+            <p className="text-gray-500">Зони: &lt;70% → 0, 70–89% → 50%, 90–99% → 100%, 100%+ → 120%.</p>
+          )
         )}
       </div>
     </div>

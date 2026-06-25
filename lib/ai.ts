@@ -50,6 +50,37 @@ ${JSON.stringify(metrics, null, 2)}`;
   return ask(prompt);
 }
 
+/** O: розпізнавання списку команди з сирого файлу (нікнейми + грейди). */
+export async function extractTeam(rawText: string): Promise<{ name: string; grade: string }[]> {
+  const prompt = `Нижче — сирий вміст файлу зі списком команди (можливі зайві колонки, шапки, шум).
+Витягни список учасників. Для кожного поверни нікнейм/імʼя і грейд (одне з: JUNIOR, MIDDLE, SENIOR).
+Якщо грейд не вказано або незрозумілий — постав MIDDLE. Імена не вигадуй, бери лише з тексту.
+Поверни ВИКЛЮЧНО валідний JSON-масив без пояснень і без markdown, формат:
+[{"name":"nickname","grade":"MIDDLE"}]
+
+Вміст файлу:
+${rawText.slice(0, 8000)}`;
+  const text = await ask(prompt);
+
+  // Дістаємо JSON-масив навіть якщо модель додала зайве
+  let jsonStr = text.trim();
+  const start = jsonStr.indexOf('[');
+  const end = jsonStr.lastIndexOf(']');
+  if (start !== -1 && end !== -1 && end > start) jsonStr = jsonStr.slice(start, end + 1);
+
+  let parsed: any;
+  try { parsed = JSON.parse(jsonStr); } catch { return []; }
+  if (!Array.isArray(parsed)) return [];
+
+  const valid = new Set(['JUNIOR', 'MIDDLE', 'SENIOR']);
+  return parsed
+    .map((m: any) => ({
+      name: String(m?.name ?? '').trim(),
+      grade: valid.has(String(m?.grade ?? '').toUpperCase()) ? String(m.grade).toUpperCase() : 'MIDDLE',
+    }))
+    .filter((m) => m.name.length > 0);
+}
+
 /** Точка 2: оцінка ефективності активної конфігурації на основі конфігу + HISTORY. */
 export async function analyzeConfiguration(data: unknown): Promise<string> {
   const prompt = `Ось активна KPI-конфігурація команди разом з історією результатів (HISTORY) по місяцях.

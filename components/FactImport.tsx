@@ -11,10 +11,11 @@ interface Props {
   configId: string;
   managers: { id: string; name: string }[];
   metrics: { metricId: string; name: string }[];
+  period?: string;
   onImported: () => void;
 }
 
-export default function FactImport({ configId, managers, metrics, onImported }: Props) {
+export default function FactImport({ configId, managers, metrics, period, onImported }: Props) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
@@ -82,7 +83,7 @@ export default function FactImport({ configId, managers, metrics, onImported }: 
     setBusy(true);
     try {
       const res = await fetch(`/api/configurations/${configId}/data`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries }),
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries, period }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Помилка збереження');
       const warns: string[] = [];

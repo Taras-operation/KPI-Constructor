@@ -30,7 +30,7 @@ export async function GET() {
       : 0;
     const totalBonus = Math.round(results.reduce((s, r) => s + r.bonusAmount, 0) * 100) / 100;
     const expectedCells = results.length * config.metrics.length;
-    const filledCells = config.currentData.filter((d) => d.factValue !== null).length;
+    const filledCells = results.reduce((s, r) => s + r.metrics.filter((m) => m.fact != null).length, 0);
 
     teams.push({
       configId: c.id,

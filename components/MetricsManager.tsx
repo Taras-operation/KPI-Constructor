@@ -204,22 +204,22 @@ export default function MetricsManager() {
       ) : metrics.length === 0 ? (
         <p className="text-gray-500 text-sm">Метрик не знайдено.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[64vh] border border-gray-100 rounded-lg">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b border-gray-200">
-                <th className="py-2 pr-4 font-medium">Назва</th>
-                <th className="py-2 pr-4 font-medium">Тип</th>
-                <th className="py-2 pr-4 font-medium">Од.</th>
-                <th className="py-2 pr-4 font-medium">Напрямок</th>
-                <th className="py-2 pr-4 font-medium">Обов&apos;язкова для</th>
-                <th className="py-2 pr-4 font-medium"></th>
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr className="text-left text-gray-500 border-b border-gray-200 shadow-[0_1px_0_0_#e5e7eb]">
+                <th className="py-2 px-4 font-medium bg-white">Назва</th>
+                <th className="py-2 pr-4 font-medium bg-white">Тип</th>
+                <th className="py-2 pr-4 font-medium bg-white">Од.</th>
+                <th className="py-2 pr-4 font-medium bg-white">Напрямок</th>
+                <th className="py-2 pr-4 font-medium bg-white">Обов&apos;язкова для</th>
+                <th className="py-2 pr-4 font-medium bg-white"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {metrics.map((m) => (
                 <tr key={m.id} className={m.status === 'ARCHIVED' ? 'opacity-50' : ''}>
-                  <td className="py-2 pr-4">
+                  <td className="py-2 px-4">
                     <span className="font-medium text-gray-900">{m.name}</span>
                     {m.description && <p className="text-xs text-gray-400">{m.description}</p>}
                   </td>

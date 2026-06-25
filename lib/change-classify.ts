@@ -17,6 +17,12 @@ function num(v: any): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
+// Канонічний відбиток зон матриці (Q): сортуємо за порогом
+function matrixFp(m: any): string {
+  if (!Array.isArray(m)) return '';
+  return JSON.stringify([...m].map((z) => [num(z.from), num(z.mult)]).sort((a, b) => (a[0] ?? 0) - (b[0] ?? 0)));
+}
+
 // Канонічний "критичний відбиток" — все, що вважається критичним.
 function fingerprintCurrent(c: CurrentConfig): string {
   const metrics = c.metrics.map((m) => [m.metricId, num(m.weight)] as const).sort((a, b) => a[0].localeCompare(b[0]));
@@ -29,7 +35,7 @@ function fingerprintCurrent(c: CurrentConfig): string {
     .sort((a, b) => (a[0] + a[1]).localeCompare(b[0] + b[1]));
   const bp = c.bonusParameters ?? {};
   const overrides = (Array.isArray(c.requiredOverrides) ? c.requiredOverrides : []).map((o: any) => o.metricId).sort();
-  return JSON.stringify({ metrics, managers, plans, bonusModel: c.bonusModel, bp: { t: num(bp.threshold), mc: num(bp.maxCoefficient), cur: bp.currency ?? '$' }, overrides });
+  return JSON.stringify({ metrics, managers, plans, bonusModel: c.bonusModel, bp: { t: num(bp.threshold), mc: num(bp.maxCoefficient), cur: bp.currency ?? '$', mx: matrixFp(bp.matrix) }, overrides });
 }
 
 function fingerprintPayload(p: any): string {
@@ -47,7 +53,7 @@ function fingerprintPayload(p: any): string {
   plans.sort((a, b) => (a[0] + a[1]).localeCompare(b[0] + b[1]));
   const bp = p.bonusParameters ?? {};
   const overrides = (p.requiredOverrides ?? []).map((o: any) => o.metricId).sort();
-  return JSON.stringify({ metrics, managers, plans, bonusModel: p.bonusModel, bp: { t: num(bp.threshold), mc: num(bp.maxCoefficient), cur: bp.currency ?? '$' }, overrides });
+  return JSON.stringify({ metrics, managers, plans, bonusModel: p.bonusModel, bp: { t: num(bp.threshold), mc: num(bp.maxCoefficient), cur: bp.currency ?? '$', mx: matrixFp(bp.matrix) }, overrides });
 }
 
 /** true, якщо зміна критична (відрізняється критичний відбиток). */

@@ -68,6 +68,7 @@ interface BonusParameters {
   baseBonus: number;
   threshold?: number;
   maxCoefficient?: number;
+  matrix?: { from: number; mult: number }[]; // зони матриці: від % виконання -> множник базового бонусу
 }
 
 /**
@@ -99,16 +100,20 @@ export function calculateBonus(
     }
 
     case 'MATRIX': {
-      // Чотири зони
-      if (kpiPercentage < 70) {
-        return 0; // Зона провалу
-      } else if (kpiPercentage < 90) {
-        return baseBonus * 0.5; // Зона часткового виконання
-      } else if (kpiPercentage < 100) {
-        return baseBonus; // Зона виконання плану
-      } else {
-        return baseBonus * 1.2; // Зона перевиконання
+      // Зони беруться з конфігурації (параметр matrix), інакше — дефолтні чотири зони
+      const zones = Array.isArray(parameters.matrix) && parameters.matrix.length > 0
+        ? [...parameters.matrix].sort((a, b) => a.from - b.from)
+        : [
+            { from: 0, mult: 0 },
+            { from: 70, mult: 0.5 },
+            { from: 90, mult: 1 },
+            { from: 100, mult: 1.2 },
+          ];
+      let mult = 0;
+      for (const z of zones) {
+        if (kpiPercentage >= z.from) mult = z.mult;
       }
+      return baseBonus * mult;
     }
 
     default:

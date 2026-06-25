@@ -32,6 +32,7 @@ export default function TeamLeadConfigs() {
   const [rows, setRows] = useState<ConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [detail, setDetail] = useState<any | null>(null);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
@@ -91,6 +92,9 @@ export default function TeamLeadConfigs() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Помилка');
       setDetail(null);
+      setNotice(action === 'APPROVE'
+        ? 'Конфігурацію погоджено. Очікуйте, поки Operations активує систему.'
+        : 'Конфігурацію повернуто на коригування.');
       await load();
     } catch (e: any) {
       setError(e.message);
@@ -110,6 +114,12 @@ export default function TeamLeadConfigs() {
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-4 text-sm">{error}</div>}
+      {notice && (
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-2 rounded mb-4 text-sm flex items-start justify-between gap-3">
+          <span>{notice}</span>
+          <button onClick={() => setNotice('')} className="text-green-600 hover:text-green-800 shrink-0">✕</button>
+        </div>
+      )}
 
       {(() => { const visible = rows.filter((c) => showArchived || c.status !== 'ARCHIVED'); return (
       loading ? (
@@ -129,7 +139,9 @@ export default function TeamLeadConfigs() {
                   Період {fmtPeriod(c.period)} · {c._count.metrics} метрик · {c._count.managers} менеджерів
                 </p>
                 {c.status === 'ON_APPROVAL' && (
-                  <p className="text-sm text-amber-700 mt-1">Очікує вашого погодження</p>
+                  c.approvedAt
+                    ? <p className="text-sm text-green-700 mt-1">Погоджено вами — очікує активації Operations</p>
+                    : <p className="text-sm text-amber-700 mt-1">Очікує вашого погодження</p>
                 )}
               </div>
               <div className="flex flex-col items-end gap-1.5 text-sm whitespace-nowrap">
@@ -179,7 +191,13 @@ export default function TeamLeadConfigs() {
               {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-4 text-sm">{error}</div>}
               <ConfigurationView config={detail} />
 
-              {detail.status === 'ON_APPROVAL' && (
+              {detail.status === 'ON_APPROVAL' && detail.approvedAt && (
+                <div className="mt-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded text-sm">
+                  Ви вже погодили цю конфігурацію. Очікуйте, поки Operations активує систему.
+                </div>
+              )}
+
+              {detail.status === 'ON_APPROVAL' && !detail.approvedAt && (
                 <div className="mt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Коментар (необов&apos;язково для погодження)</label>
                   <textarea
@@ -193,7 +211,7 @@ export default function TeamLeadConfigs() {
               )}
             </div>
 
-            {detail.status === 'ON_APPROVAL' && (
+            {detail.status === 'ON_APPROVAL' && !detail.approvedAt && (
               <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
                 <button onClick={() => act('REQUEST_CORRECTION')} disabled={busy} className="px-4 py-2 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 disabled:opacity-50">
                   Повернути на коригування

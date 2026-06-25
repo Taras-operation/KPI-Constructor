@@ -102,6 +102,7 @@ const bonusParameters = z.object({
   currency: z.string().optional(),
   threshold: z.number().optional(),
   maxCoefficient: z.number().optional(),
+  matrix: z.array(z.object({ from: z.number(), mult: z.number() })).optional(), // Q: редаговані зони матриці
 });
 const plans = z.record(z.string(), z.record(z.string(), z.union([z.number(), z.string(), z.null()]))).optional();
 const requiredOverrides = z.array(z.object({
@@ -148,6 +149,7 @@ export const resolveSchema = z.object({
 });
 
 export const dataSchema = z.object({
+  period: z.string().regex(/^\d{6}$/).optional(), // W: місяць, за який вноситься факт
   entries: z.array(
     z.object({
       managerId: z.string().min(1),
@@ -163,5 +165,6 @@ export const statusSchema = z.object({
 });
 
 export const historySaveSchema = z.object({
+  period: z.string().regex(/^\d{6}$/).optional(), // W: місяць, що зберігається в HISTORY
   comments: z.record(z.string(), z.string()).optional(),
 });
